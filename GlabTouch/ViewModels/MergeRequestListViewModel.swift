@@ -11,7 +11,7 @@ final class MergeRequestListViewModel {
 
     enum MRFilter: String, CaseIterable, Identifiable {
         case assignedToMe = "Assigned"
-        case createdByMe = "Created"
+        case createdByMe = "Created by Me"
         case reviewRequested = "Review"
 
         var id: String { rawValue }

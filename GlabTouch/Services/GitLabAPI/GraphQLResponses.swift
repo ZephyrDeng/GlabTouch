@@ -13,6 +13,19 @@ struct CurrentUser: Decodable {
         let connection = assignedMergeRequests ?? authoredMergeRequests ?? reviewRequestedMergeRequests
         return connection?.nodes ?? []
     }
+
+    var allMergeRequests: [MRNode] {
+        var seen = Set<String>()
+        return [
+            assignedMergeRequests?.nodes ?? [],
+            authoredMergeRequests?.nodes ?? [],
+            reviewRequestedMergeRequests?.nodes ?? []
+        ]
+        .flatMap { $0 }
+        .filter { mergeRequest in
+            seen.insert(mergeRequest.id).inserted
+        }
+    }
 }
 
 struct MRConnection: Decodable {
@@ -36,9 +49,12 @@ struct MRNode: Decodable {
     let headPipeline: PipelineNode?
 
     func toMergeRequest() -> MergeRequest {
-        MergeRequest(
+        let webURL = webUrl.flatMap { URL(string: $0) }
+        let mrIID = Int(iid) ?? 0
+
+        return MergeRequest(
             id: id,
-            iid: Int(iid) ?? 0,
+            iid: mrIID,
             projectID: extractProjectID(from: project.id),
             title: title,
             description: description,
@@ -49,8 +65,13 @@ struct MRNode: Decodable {
             approved: approved,
             reviewers: reviewers.nodes.map { $0.toUser() },
             diffStats: diffStats?.map { DiffStat(path: $0.path, additions: $0.additions, deletions: $0.deletions) },
-            headPipeline: headPipeline?.toPipeline(),
-            webURL: webUrl.flatMap { URL(string: $0) }
+            headPipeline: headPipeline?.toPipeline(
+                mergeRequestTitle: title,
+                mergeRequestIID: mrIID,
+                projectFullPath: project.fullPath,
+                webURL: webURL
+            ),
+            webURL: webURL
         )
     }
 
@@ -93,15 +114,26 @@ struct DiffStatNode: Decodable {
 struct PipelineNode: Decodable {
     let id: String
     let status: String
+    let ref: String?
+    let sha: String?
     let stages: StageConnection?
 
-    func toPipeline() -> Pipeline {
+    func toPipeline(
+        mergeRequestTitle: String? = nil,
+        mergeRequestIID: Int? = nil,
+        projectFullPath: String? = nil,
+        webURL: URL? = nil
+    ) -> Pipeline {
         Pipeline(
             id: id,
             status: Pipeline.Status(rawValue: status.lowercased()) ?? .created,
-            ref: nil,
-            sha: nil,
-            stages: stages?.nodes.map { $0.toStage() } ?? []
+            ref: ref,
+            sha: sha,
+            stages: stages?.nodes.map { $0.toStage() } ?? [],
+            mergeRequestTitle: mergeRequestTitle,
+            mergeRequestIID: mergeRequestIID,
+            projectFullPath: projectFullPath,
+            webURL: webURL
         )
     }
 }

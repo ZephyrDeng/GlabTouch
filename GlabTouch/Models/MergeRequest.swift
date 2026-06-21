@@ -19,6 +19,25 @@ struct MergeRequest: Identifiable, Hashable {
     enum State: String, Codable {
         case opened, closed, merged, locked
     }
+
+    func withApproval(_ approved: Bool) -> MergeRequest {
+        MergeRequest(
+            id: id,
+            iid: iid,
+            projectID: projectID,
+            title: title,
+            description: description,
+            author: author,
+            sourceBranch: sourceBranch,
+            targetBranch: targetBranch,
+            state: state,
+            approved: approved,
+            reviewers: reviewers,
+            diffStats: diffStats,
+            headPipeline: headPipeline,
+            webURL: webURL
+        )
+    }
 }
 
 struct User: Identifiable, Hashable, Codable {

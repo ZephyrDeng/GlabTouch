@@ -13,17 +13,17 @@ struct PipelineStatusBadge: View {
 extension Pipeline.Status {
     var displayName: String {
         switch self {
-        case .created: "Created"
-        case .waiting: "Waiting"
-        case .preparing: "Preparing"
-        case .pending: "Pending"
-        case .running: "Running"
-        case .success: "Passed"
-        case .failed: "Failed"
-        case .canceled: "Canceled"
-        case .skipped: "Skipped"
-        case .manual: "Manual"
-        case .scheduled: "Scheduled"
+        case .created: String(localized: "Created")
+        case .waiting: String(localized: "Waiting")
+        case .preparing: String(localized: "Preparing")
+        case .pending: String(localized: "Pending")
+        case .running: String(localized: "Running")
+        case .success: String(localized: "Passed")
+        case .failed: String(localized: "Failed")
+        case .canceled: String(localized: "Canceled")
+        case .skipped: String(localized: "Skipped")
+        case .manual: String(localized: "Manual")
+        case .scheduled: String(localized: "Scheduled")
         }
     }
 

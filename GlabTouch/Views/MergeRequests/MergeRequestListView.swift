@@ -9,7 +9,7 @@ struct MergeRequestListView: View {
             VStack(spacing: 0) {
                 Picker("Filter", selection: $viewModel.selectedFilter) {
                     ForEach(MergeRequestListViewModel.MRFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Text(LocalizedStringKey(filter.rawValue)).tag(filter)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -26,7 +26,11 @@ struct MergeRequestListView: View {
                     }
 
                     ForEach(viewModel.mergeRequests) { mr in
-                        MergeRequestRowView(mergeRequest: mr)
+                        NavigationLink {
+                            MergeRequestDetailView(mergeRequest: mr)
+                        } label: {
+                            MergeRequestRowView(mergeRequest: mr)
+                        }
                     }
                 }
                 .listStyle(.plain)
@@ -50,9 +54,9 @@ struct MergeRequestListView: View {
     }
 
     private func loadData() async {
-        guard let baseURL = authService.baseURL,
+        guard let instance = authService.currentInstance,
               let token = authService.accessToken else { return }
-        let client = GitLabAPIClient(baseURL: baseURL, token: token)
+        let client = GitLabAPIClient(baseURL: instance.baseURL, token: token, authMethod: instance.authMethod)
         await viewModel.loadMergeRequests(client: client)
     }
 }

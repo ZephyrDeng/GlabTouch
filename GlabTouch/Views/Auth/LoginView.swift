@@ -5,6 +5,9 @@ struct LoginView: View {
     @State private var instanceURL = ""
     @State private var token = ""
     @State private var instanceName = "My GitLab"
+    @State private var authMethod: GitLabInstance.AuthMethod = .pat
+    @State private var oauthClientID = ""
+    @State private var oauthRedirectURI = "glabtouch://oauth/callback"
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -20,9 +23,25 @@ struct LoginView: View {
                 }
 
                 Section("Authentication") {
-                    SecureField("Personal Access Token", text: $token)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    Picker("Method", selection: $authMethod) {
+                        Text("Personal Access Token").tag(GitLabInstance.AuthMethod.pat)
+                        Text("OAuth 2.0").tag(GitLabInstance.AuthMethod.oauth)
+                    }
+                    .pickerStyle(.segmented)
+
+                    if authMethod == .pat {
+                        SecureField("Personal Access Token", text: $token)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    } else {
+                        TextField("OAuth Client ID", text: $oauthClientID)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        TextField("Redirect URI", text: $oauthRedirectURI)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    }
                 }
 
                 if let errorMessage {
@@ -41,32 +60,84 @@ struct LoginView: View {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Text("Sign In")
-                                .frame(maxWidth: .infinity)
+                            if authMethod == .pat {
+                                Text("Sign In")
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Sign in with OAuth")
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
                     }
-                    .disabled(instanceURL.isEmpty || token.isEmpty || isLoading)
+                    .disabled(isSignInDisabled)
                 }
             }
             .navigationTitle("GlabTouch")
         }
     }
 
+    private var isSignInDisabled: Bool {
+        if isLoading || normalizedInstanceURL == nil {
+            return true
+        }
+
+        switch authMethod {
+        case .pat:
+            return token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .oauth:
+            return oauthClientID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || normalizedRedirectURI == nil
+        }
+    }
+
     private func login() async {
-        guard let url = URL(string: instanceURL) else {
-            errorMessage = "Invalid URL"
+        guard let url = normalizedInstanceURL else {
+            errorMessage = "Enter a valid GitLab URL, for example https://gitlab.com"
             return
         }
 
+        errorMessage = nil
         isLoading = true
         defer { isLoading = false }
 
-        let instance = GitLabInstance(name: instanceName, baseURL: url, authMethod: .pat)
+        let instance = GitLabInstance(name: instanceDisplayName(for: url), baseURL: url, authMethod: authMethod)
         do {
-            try await authService.loginWithPAT(instance: instance, token: token)
+            switch authMethod {
+            case .pat:
+                try await authService.loginWithPAT(
+                    instance: instance,
+                    token: token.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+            case .oauth:
+                guard let redirectURI = normalizedRedirectURI else {
+                    throw OAuthError.invalidRedirectURI
+                }
+                try await authService.loginWithOAuth(
+                    instance: instance,
+                    clientID: oauthClientID.trimmingCharacters(in: .whitespacesAndNewlines),
+                    redirectURI: redirectURI
+                )
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private var normalizedInstanceURL: URL? {
+        GitLabBaseURLNormalizer.normalize(instanceURL)
+    }
+
+    private var normalizedRedirectURI: URL? {
+        let trimmed = oauthRedirectURI.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed), url.scheme != nil else { return nil }
+        return url
+    }
+
+    private func instanceDisplayName(for url: URL) -> String {
+        let trimmedName = instanceName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty {
+            return trimmedName
+        }
+        return url.host ?? "GitLab"
     }
 }
 

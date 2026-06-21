@@ -12,15 +12,18 @@ final class GitLabAPIClient {
 
     private var baseURL: URL
     private var token: String
+    private var authMethod: GitLabInstance.AuthMethod
 
-    init(baseURL: URL, token: String) {
+    init(baseURL: URL, token: String, authMethod: GitLabInstance.AuthMethod = .pat) {
         self.baseURL = baseURL
         self.token = token
+        self.authMethod = authMethod
     }
 
-    func updateCredentials(baseURL: URL, token: String) {
+    func updateCredentials(baseURL: URL, token: String, authMethod: GitLabInstance.AuthMethod = .pat) {
         self.baseURL = baseURL
         self.token = token
+        self.authMethod = authMethod
     }
 
     // MARK: - GraphQL
@@ -29,7 +32,7 @@ final class GitLabAPIClient {
         let url = baseURL.appendingPathComponent("api/graphql")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        applyAuthorization(to: &request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         var body: [String: Any] = ["query": query]
@@ -55,7 +58,7 @@ final class GitLabAPIClient {
         let url = baseURL.appendingPathComponent("api/v4").appendingPathComponent(path)
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "PRIVATE-TOKEN")
+        applyAuthorization(to: &request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if let body {
@@ -71,13 +74,35 @@ final class GitLabAPIClient {
         let url = baseURL.appendingPathComponent("api/v4").appendingPathComponent(path)
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "PRIVATE-TOKEN")
+        applyAuthorization(to: &request)
 
         let (_, response) = try await session.data(for: request)
         try validateResponse(response)
     }
 
+    func mergeRequestChanges(projectID: Int, mrIID: Int) async throws -> [DiffFile] {
+        let response: MergeRequestChangesResponse = try await rest(
+            "GET",
+            path: "projects/\(projectID)/merge_requests/\(mrIID)/changes"
+        )
+        return response.changes
+    }
+
+    func pipelineDashboard() async throws -> [Pipeline] {
+        let response: CurrentUserResponse = try await graphQL(GraphQLQueries.pipelineDashboard)
+        return response.currentUser.allMergeRequests.compactMap { $0.toMergeRequest().headPipeline }
+    }
+
     // MARK: - Helpers
+
+    private func applyAuthorization(to request: inout URLRequest) {
+        switch authMethod {
+        case .pat:
+            request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
+        case .oauth:
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+    }
 
     private func validateResponse(_ response: URLResponse) throws {
         guard let http = response as? HTTPURLResponse else {
@@ -87,6 +112,10 @@ final class GitLabAPIClient {
             throw GitLabAPIError.httpError(http.statusCode)
         }
     }
+}
+
+struct MergeRequestChangesResponse: Decodable {
+    let changes: [DiffFile]
 }
 
 struct GraphQLResponse<T: Decodable>: Decodable {

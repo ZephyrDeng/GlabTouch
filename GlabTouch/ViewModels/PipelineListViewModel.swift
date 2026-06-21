@@ -10,8 +10,13 @@ final class PipelineListViewModel {
     func loadPipelines(client: GitLabAPIClient) async {
         isLoading = true
         error = nil
-        defer { isLoading = false }
 
-        // GraphQL pipeline query
+        do {
+            pipelines = try await client.pipelineDashboard()
+        } catch {
+            self.error = error
+        }
+
+        isLoading = false
     }
 }
