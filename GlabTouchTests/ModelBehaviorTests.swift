@@ -9,6 +9,7 @@ struct ModelBehaviorTests {
         try testCountsActionablePipelinesForLocalBadge()
         try testDecodesPipelineIdentifiersForInteraction()
         try testPipelineJobInteractionRules()
+        try testGroupsPipelineJobsForStableStageDisclosure()
         try testDetectsPipelineStartAndCompletionNotifications()
         try testDecodesPipelineNotificationPayload()
         try testParsesUnifiedDiffLines()
@@ -233,6 +234,21 @@ struct ModelBehaviorTests {
             [],
             "completed successful jobs should expose no mutation action"
         )
+    }
+
+    private static func testGroupsPipelineJobsForStableStageDisclosure() throws {
+        let jobs = [
+            PipelineJob(id: 1, name: "source branch", stage: "merge checks", status: .success),
+            PipelineJob(id: 2, name: "go test", stage: "merge checks", status: .success),
+            PipelineJob(id: 3, name: "manual deploy", stage: "deploy", status: .manual)
+        ]
+
+        let groups = PipelineStageGroup.groups(for: jobs)
+
+        assertEqual(groups.map(\.id), ["merge checks", "deploy"], "stage group identity should stay stable for disclosure rows")
+        assertEqual(groups.first?.jobs.map(\.id), [1, 2], "stage groups should preserve job ordering")
+        assertEqual(groups.first?.status, .success, "stage group status should summarize completed jobs")
+        assertEqual(groups.last?.status, .manual, "stage group status should expose actionable manual jobs")
     }
 
     private static func testDetectsPipelineStartAndCompletionNotifications() throws {

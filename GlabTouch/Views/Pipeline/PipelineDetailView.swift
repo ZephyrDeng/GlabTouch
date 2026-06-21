@@ -1,11 +1,15 @@
 import SwiftUI
 
+private let stageDisclosureAnimation = Animation.timingCurve(0.22, 1.0, 0.36, 1.0, duration: 0.22)
+
 struct PipelineDetailView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
 
     let pipeline: Pipeline
     @State private var viewModel = PipelineDetailViewModel()
+    @State private var expandedStageIDs: Set<String> = []
 
     var body: some View {
         List {
@@ -42,19 +46,16 @@ struct PipelineDetailView: View {
                             description: Text("Pipeline jobs will appear here.")
                         )
                     } else {
-                        ForEach(stageGroups, id: \.stage) { group in
-                            DisclosureGroup {
-                                ForEach(group.jobs) { job in
-                                    PipelineJobRowView(
-                                        job: job,
-                                        projectID: projectID,
-                                        isMutating: viewModel.isMutating,
-                                        performAction: performAction
-                                    )
-                                }
-                            } label: {
-                                Text(group.stage)
-                            }
+                        ForEach(stageGroups) { group in
+                            PipelineStageDisclosureRow(
+                                group: group,
+                                isExpanded: expandedStageIDs.contains(group.id),
+                                reduceMotion: reduceMotion,
+                                projectID: projectID,
+                                isMutating: viewModel.isMutating,
+                                toggle: { toggleStage(group) },
+                                performAction: performAction
+                            )
                         }
                     }
                 }
@@ -85,16 +86,8 @@ struct PipelineDetailView: View {
         }
     }
 
-    private var stageGroups: [(stage: String, jobs: [PipelineJob])] {
-        var result: [(stage: String, jobs: [PipelineJob])] = []
-        for job in viewModel.jobs {
-            if let index = result.firstIndex(where: { $0.stage == job.stage }) {
-                result[index].jobs.append(job)
-            } else {
-                result.append((stage: job.stage, jobs: [job]))
-            }
-        }
-        return result
+    private var stageGroups: [PipelineStageGroup] {
+        PipelineStageGroup.groups(for: viewModel.jobs)
     }
 
     private func loadJobs() async {
@@ -128,10 +121,88 @@ struct PipelineDetailView: View {
         }
     }
 
+    private func toggleStage(_ group: PipelineStageGroup) {
+        withAnimation(reduceMotion ? nil : stageDisclosureAnimation) {
+            if expandedStageIDs.contains(group.id) {
+                expandedStageIDs.remove(group.id)
+            } else {
+                expandedStageIDs.insert(group.id)
+            }
+        }
+    }
+
     private var client: GitLabAPIClient? {
         guard let instance = authService.currentInstance,
               let token = authService.accessToken else { return nil }
         return GitLabAPIClient(baseURL: instance.baseURL, token: token, authMethod: instance.authMethod)
+    }
+}
+
+private struct PipelineStageDisclosureRow: View {
+    let group: PipelineStageGroup
+    let isExpanded: Bool
+    let reduceMotion: Bool
+    let projectID: Int
+    let isMutating: Bool
+    let toggle: () -> Void
+    let performAction: (PipelineJobAction, PipelineJob, Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: toggle) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(group.stage)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        Label {
+                            Text(group.jobs.count, format: .number)
+                        } icon: {
+                            Image(systemName: "hammer")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    PipelineStatusBadge(status: group.status)
+                        .frame(minWidth: 64, alignment: .trailing)
+
+                    Image(systemName: "chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                        .frame(width: 24, height: 24)
+                }
+                .contentShape(Rectangle())
+                .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(Text(isExpanded ? "Expanded" : "Collapsed"))
+
+            if isExpanded {
+                VStack(spacing: 0) {
+                    ForEach(group.jobs) { job in
+                        PipelineJobRowView(
+                            job: job,
+                            projectID: projectID,
+                            isMutating: isMutating,
+                            performAction: performAction
+                        )
+
+                        if job.id != group.jobs.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+                .padding(.top, 6)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(reduceMotion ? nil : stageDisclosureAnimation, value: isExpanded)
     }
 }
 

@@ -160,6 +160,65 @@ struct PipelineJob: Identifiable, Hashable, Decodable {
     }
 }
 
+struct PipelineStageGroup: Identifiable, Hashable {
+    let id: String
+    let stage: String
+    let jobs: [PipelineJob]
+
+    var status: Pipeline.Status {
+        Self.summaryStatus(for: jobs)
+    }
+
+    static func groups(for jobs: [PipelineJob]) -> [PipelineStageGroup] {
+        var result: [PipelineStageGroup] = []
+        for job in jobs {
+            if let index = result.firstIndex(where: { $0.stage == job.stage }) {
+                var existingJobs = result[index].jobs
+                existingJobs.append(job)
+                result[index] = PipelineStageGroup(stage: job.stage, jobs: existingJobs)
+            } else {
+                result.append(PipelineStageGroup(stage: job.stage, jobs: [job]))
+            }
+        }
+        return result
+    }
+
+    init(stage: String, jobs: [PipelineJob]) {
+        self.id = stage
+        self.stage = stage
+        self.jobs = jobs
+    }
+
+    private static func summaryStatus(for jobs: [PipelineJob]) -> Pipeline.Status {
+        let statuses = jobs.map(\.status)
+        let priority: [Pipeline.Status] = [
+            .failed,
+            .running,
+            .canceling,
+            .pending,
+            .preparing,
+            .waitingForResource,
+            .waitingForCallback,
+            .waiting,
+            .created,
+            .scheduled,
+            .manual,
+            .canceled
+        ]
+
+        if let status = priority.first(where: { statuses.contains($0) }) {
+            return status
+        }
+        if statuses.allSatisfy({ $0 == .success }) {
+            return .success
+        }
+        if statuses.allSatisfy({ $0 == .skipped }) {
+            return .skipped
+        }
+        return statuses.first ?? .skipped
+    }
+}
+
 enum PipelineJobAction: String, CaseIterable, Hashable {
     case play
     case retry
