@@ -20,8 +20,16 @@ final class MergeRequestListViewModel {
     func loadMergeRequests(client: GitLabAPIClient) async {
         isLoading = true
         error = nil
-        defer { isLoading = false }
 
-        // GraphQL query will be implemented with real query strings
+        do {
+            let fieldName = GraphQLQueries.filterFieldName(for: selectedFilter)
+            let query = GraphQLQueries.mergeRequests(filter: fieldName)
+            let response: CurrentUserResponse = try await client.graphQL(query)
+            mergeRequests = response.currentUser.mergeRequests.map { $0.toMergeRequest() }
+        } catch {
+            self.error = error
+        }
+
+        isLoading = false
     }
 }

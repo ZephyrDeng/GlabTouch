@@ -14,5 +14,6 @@ struct GlabTouchApp: App {
                     .environment(authService)
             }
         }
+        .onChange(of: authService.isAuthenticated) {}
     }
 }
