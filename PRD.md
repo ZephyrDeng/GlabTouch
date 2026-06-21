@@ -33,19 +33,21 @@ Developers and engineering leads using GitLab self-hosted (CE/EE) who need to re
 - No inline comments (v1.1+)
 
 #### Pipeline Status
-- View pipeline status associated with MR (read-only)
+- View pipeline status associated with MR
+- Pipeline detail with stage/job breakdown and job trace viewing
+- Pipeline and job actions: retry, cancel, and manual play where GitLab allows them
 - Stage/job breakdown with status indicators (success/failed/running/pending)
-- No job operations (play/retry/cancel deferred to v1.1+)
+- Destructive actions require GitLab permissions and return API errors inline
 
 #### Push Notifications
 - APNs client-side registration and handling
 - Standardized notification payload schema
+- Pipeline started and completed notifications
 - Reference webhook relay implementation (user self-deploys)
 - Fallback: configurable local polling with badge updates
 
 ### Explicitly Out of Scope (v1.1+)
 - MR comments / inline review comments
-- Pipeline job operations (play/retry/cancel)
 - GitLab Todo list
 - Issue management
 - Repository / code browsing
@@ -117,16 +119,24 @@ POST /projects/:id/merge_requests/:iid/approve
 POST /projects/:id/merge_requests/:iid/unapprove
 GET  /projects/:id/merge_requests/:iid/approvals
 GET  /projects/:id/merge_requests/:iid/changes   # full diff content
+GET  /projects/:id/pipelines/:pipeline_id/jobs
+GET  /projects/:id/jobs/:job_id/trace
+POST /projects/:id/pipelines/:pipeline_id/retry
+POST /projects/:id/pipelines/:pipeline_id/cancel
+POST /projects/:id/jobs/:job_id/play
+POST /projects/:id/jobs/:job_id/retry
+POST /projects/:id/jobs/:job_id/cancel
 ```
 
 ## Notification Payload Schema
 
 ```json
 {
-  "type": "mr_assigned | mr_approved | mr_merged | pipeline_failed",
+  "type": "mr_assigned | mr_approved | mr_merged | pipeline_started | pipeline_completed | pipeline_failed",
   "instance": "https://gitlab.example.com",
   "project": { "id": 123, "name": "my-project" },
   "merge_request": { "iid": 42, "title": "feat: ..." },
+  "pipeline": { "id": 456, "ref": "main", "status": "running" },
   "actor": { "username": "alice", "avatar_url": "..." },
   "timestamp": "2026-06-21T10:00:00Z"
 }

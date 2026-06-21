@@ -66,6 +66,7 @@ struct MRNode: Decodable {
             reviewers: reviewers.nodes.map { $0.toUser() },
             diffStats: diffStats?.map { DiffStat(path: $0.path, additions: $0.additions, deletions: $0.deletions) },
             headPipeline: headPipeline?.toPipeline(
+                projectID: extractProjectID(from: project.id),
                 mergeRequestTitle: title,
                 mergeRequestIID: mrIID,
                 projectFullPath: project.fullPath,
@@ -119,6 +120,7 @@ struct PipelineNode: Decodable {
     let stages: StageConnection?
 
     func toPipeline(
+        projectID: Int? = nil,
         mergeRequestTitle: String? = nil,
         mergeRequestIID: Int? = nil,
         projectFullPath: String? = nil,
@@ -130,11 +132,18 @@ struct PipelineNode: Decodable {
             ref: ref,
             sha: sha,
             stages: stages?.nodes.map { $0.toStage() } ?? [],
+            pipelineID: extractNumericID(from: id),
+            projectID: projectID,
             mergeRequestTitle: mergeRequestTitle,
             mergeRequestIID: mergeRequestIID,
             projectFullPath: projectFullPath,
             webURL: webURL
         )
+    }
+
+    private func extractNumericID(from gid: String) -> Int? {
+        guard let value = gid.split(separator: "/").last else { return nil }
+        return Int(value)
     }
 }
 
@@ -166,12 +175,20 @@ struct JobNode: Decodable {
     let id: String
     let name: String
     let status: String
+    let webUrl: String?
 
     func toJob() -> Job {
         Job(
             id: id,
             name: name,
-            status: Pipeline.Status(rawValue: status.lowercased()) ?? .created
+            status: Pipeline.Status(rawValue: status.lowercased()) ?? .created,
+            jobID: extractNumericID(from: id),
+            webURL: webUrl.flatMap { URL(string: $0) }
         )
+    }
+
+    private func extractNumericID(from gid: String) -> Int? {
+        guard let value = gid.split(separator: "/").last else { return nil }
+        return Int(value)
     }
 }

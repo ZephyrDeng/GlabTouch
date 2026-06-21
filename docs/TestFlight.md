@@ -40,7 +40,7 @@ ASC_ISSUER_ID=<ISSUER_ID> \
 
 - Sign in with a GitLab Personal Access Token carrying `api` scope.
 - Open Merge Requests and verify assigned, created, and review-requested filters.
-- Open a merge request, verify approval state, file diff list, line-level additions/deletions, and Pipeline stage/job breakdown.
-- Open Pipelines and verify read-only status aggregation for current user merge requests.
-- Open Settings and verify saved instance switching, APNs registration state, and local polling badge refresh.
+- Open a merge request, verify approval state, file diff list, line-level additions/deletions, and Pipeline detail navigation.
+- Open Pipelines, verify status aggregation, open a Pipeline detail, inspect jobs, open a job trace, and verify available play/retry/cancel actions.
+- Open Settings and verify saved instance switching, APNs registration state, local polling badge refresh, and Pipeline start/completion notification behavior.
 - Sign out, then relaunch and verify the app returns to the login screen.

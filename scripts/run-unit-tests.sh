@@ -8,6 +8,7 @@ xcrun swiftc -parse-as-library \
   GlabTouch/Models/GitLabInstance.swift \
   GlabTouch/Models/MergeRequest.swift \
   GlabTouch/Models/Pipeline.swift \
+  GlabTouch/Models/NotificationPayload.swift \
   GlabTouch/Services/GitLabAPI/GraphQLResponses.swift \
   GlabTouch/Support/GitLabBaseURLNormalizer.swift \
   GlabTouch/Models/Diff.swift \

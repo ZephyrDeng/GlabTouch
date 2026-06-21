@@ -51,6 +51,16 @@
         }
       }
     },
+    "Allowed to Fail" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许失败"
+          }
+        }
+      }
+    },
     "Approve" : {
       "localizations" : {
         "zh-Hans" : {
@@ -137,6 +147,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已取消"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
+    },
+    "Cancel Pipeline" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消流水线"
+          }
+        }
+      }
+    },
+    "Canceling" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消中"
           }
         }
       }
@@ -281,6 +321,16 @@
         }
       }
     },
+    "Interaction Unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂不可交互"
+          }
+        }
+      }
+    },
     "Interval" : {
       "localizations" : {
         "zh-Hans" : {
@@ -297,6 +347,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上次刷新"
+          }
+        }
+      }
+    },
+    "Jobs" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "任务"
           }
         }
       }
@@ -391,6 +451,26 @@
         }
       }
     },
+    "No Jobs" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无任务"
+          }
+        }
+      }
+    },
+    "No Trace" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无日志"
+          }
+        }
+      }
+    },
     "No Diff" : {
       "localizations" : {
         "zh-Hans" : {
@@ -427,6 +507,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GitLab 没有返回文件变更。"
+          }
+        }
+      }
+    },
+    "No job trace was returned by GitLab." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitLab 未返回任务日志。"
           }
         }
       }
@@ -561,6 +651,46 @@
         }
       }
     },
+    "Pipeline Actions" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流水线操作"
+          }
+        }
+      }
+    },
+    "Pipeline Completed" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流水线已完成"
+          }
+        }
+      }
+    },
+    "Pipeline Started" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流水线已开始"
+          }
+        }
+      }
+    },
+    "Pipeline jobs will appear here." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "流水线任务会显示在这里。"
+          }
+        }
+      }
+    },
     "Pipeline status will appear here." : {
       "localizations" : {
         "zh-Hans" : {
@@ -577,6 +707,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "流水线"
+          }
+        }
+      }
+    },
+    "Play" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始"
           }
         }
       }
@@ -637,6 +777,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "立即刷新角标"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
+    },
+    "Retry Pipeline" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试流水线"
           }
         }
       }
@@ -727,6 +887,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "缺少已保存令牌。"
+          }
+        }
+      }
+    },
+    "This pipeline is missing REST identifiers." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这条流水线缺少 REST 标识。"
+          }
+        }
+      }
+    },
+    "Trace" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日志"
           }
         }
       }

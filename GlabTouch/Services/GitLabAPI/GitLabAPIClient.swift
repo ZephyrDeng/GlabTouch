@@ -6,7 +6,14 @@ final class GitLabAPIClient {
     private let session = URLSession.shared
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            if let date = ISO8601DateFormatter.gitLabDate(from: value) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO8601 date: \(value)")
+        }
         return d
     }()
 
@@ -54,9 +61,8 @@ final class GitLabAPIClient {
 
     // MARK: - REST
 
-    func rest<T: Decodable>(_ method: String, path: String, body: Encodable? = nil) async throws -> T {
-        let url = baseURL.appendingPathComponent("api/v4").appendingPathComponent(path)
-        var request = URLRequest(url: url)
+    func rest<T: Decodable>(_ method: String, path: String, queryItems: [URLQueryItem] = [], body: Encodable? = nil) async throws -> T {
+        var request = URLRequest(url: restURL(path: path, queryItems: queryItems))
         request.httpMethod = method
         applyAuthorization(to: &request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -71,8 +77,7 @@ final class GitLabAPIClient {
     }
 
     func restVoid(_ method: String, path: String) async throws {
-        let url = baseURL.appendingPathComponent("api/v4").appendingPathComponent(path)
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: restURL(path: path))
         request.httpMethod = method
         applyAuthorization(to: &request)
 
@@ -93,7 +98,57 @@ final class GitLabAPIClient {
         return response.currentUser.allMergeRequests.compactMap { $0.toMergeRequest().headPipeline }
     }
 
+    func pipelineJobs(projectID: Int, pipelineID: Int) async throws -> [PipelineJob] {
+        try await rest(
+            "GET",
+            path: "projects/\(projectID)/pipelines/\(pipelineID)/jobs",
+            queryItems: [
+                URLQueryItem(name: "include_retried", value: "true"),
+                URLQueryItem(name: "per_page", value: "100")
+            ]
+        )
+    }
+
+    func retryPipeline(projectID: Int, pipelineID: Int) async throws {
+        try await restVoid("POST", path: "projects/\(projectID)/pipelines/\(pipelineID)/retry")
+    }
+
+    func cancelPipeline(projectID: Int, pipelineID: Int) async throws {
+        try await restVoid("POST", path: "projects/\(projectID)/pipelines/\(pipelineID)/cancel")
+    }
+
+    func playJob(projectID: Int, jobID: Int) async throws -> PipelineJob {
+        try await rest("POST", path: "projects/\(projectID)/jobs/\(jobID)/play")
+    }
+
+    func retryJob(projectID: Int, jobID: Int) async throws -> PipelineJob {
+        try await rest("POST", path: "projects/\(projectID)/jobs/\(jobID)/retry")
+    }
+
+    func cancelJob(projectID: Int, jobID: Int) async throws -> PipelineJob {
+        try await rest("POST", path: "projects/\(projectID)/jobs/\(jobID)/cancel")
+    }
+
+    func jobTrace(projectID: Int, jobID: Int) async throws -> String {
+        var request = URLRequest(url: restURL(path: "projects/\(projectID)/jobs/\(jobID)/trace"))
+        request.httpMethod = "GET"
+        applyAuthorization(to: &request)
+
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response)
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+
     // MARK: - Helpers
+
+    private func restURL(path: String, queryItems: [URLQueryItem] = []) -> URL {
+        let url = baseURL.appendingPathComponent("api/v4").appendingPathComponent(path)
+        guard !queryItems.isEmpty,
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else { return url }
+        components.queryItems = queryItems
+        return components.url ?? url
+    }
 
     private func applyAuthorization(to request: inout URLRequest) {
         switch authMethod {
@@ -111,6 +166,24 @@ final class GitLabAPIClient {
         guard (200...299).contains(http.statusCode) else {
             throw GitLabAPIError.httpError(http.statusCode)
         }
+    }
+}
+
+private extension ISO8601DateFormatter {
+    static func gitLabDate(from value: String) -> Date? {
+        gitLabFractionalFormatter.date(from: value) ?? gitLabFormatter.date(from: value)
+    }
+
+    private static var gitLabFormatter: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }
+
+    private static var gitLabFractionalFormatter: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
     }
 }
 

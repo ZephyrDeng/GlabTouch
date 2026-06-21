@@ -11,9 +11,9 @@ GLabTouch is an iOS app for GitLab self-hosted instances, focused on mobile merg
 - Merge request filters for assigned, created, and review-requested work
 - Merge request detail with approval and revoke actions
 - File-level and line-level diff viewing
-- Read-only Pipeline status with stage and job breakdown
+- Interactive Pipeline detail with stage/job breakdown, trace viewing, retry, cancel, and manual play actions
 - APNs registration entry and standardized notification payload model
-- Configurable local polling fallback with badge updates
+- Configurable local polling fallback with badge updates and Pipeline start/completion notifications
 - English and Simplified Chinese UI
 
 ## Development

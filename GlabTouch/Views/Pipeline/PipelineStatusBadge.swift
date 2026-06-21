@@ -24,6 +24,9 @@ extension Pipeline.Status {
         case .skipped: String(localized: "Skipped")
         case .manual: String(localized: "Manual")
         case .scheduled: String(localized: "Scheduled")
+        case .canceling: String(localized: "Canceling")
+        case .waitingForCallback: String(localized: "Waiting")
+        case .waitingForResource: String(localized: "Waiting")
         }
     }
 
@@ -32,11 +35,12 @@ extension Pipeline.Status {
         case .success: "checkmark.circle.fill"
         case .failed: "xmark.circle.fill"
         case .running: "play.circle.fill"
-        case .pending, .waiting, .preparing, .created: "clock.fill"
+        case .pending, .waiting, .preparing, .created, .waitingForCallback, .waitingForResource: "clock.fill"
         case .canceled: "minus.circle.fill"
         case .skipped: "forward.fill"
         case .manual: "hand.raised.fill"
         case .scheduled: "calendar.circle.fill"
+        case .canceling: "stop.circle.fill"
         }
     }
 
@@ -45,10 +49,11 @@ extension Pipeline.Status {
         case .success: .green
         case .failed: .red
         case .running: .blue
-        case .pending, .waiting, .preparing, .created: .orange
+        case .pending, .waiting, .preparing, .created, .waitingForCallback, .waitingForResource: .orange
         case .canceled, .skipped: .gray
         case .manual: .purple
         case .scheduled: .teal
+        case .canceling: .orange
         }
     }
 }

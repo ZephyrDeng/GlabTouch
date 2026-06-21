@@ -16,7 +16,11 @@ struct PipelineListView: View {
                 }
 
                 ForEach(viewModel.pipelines) { pipeline in
-                    PipelineRowView(pipeline: pipeline, showsJobs: true)
+                    NavigationLink {
+                        PipelineDetailView(pipeline: pipeline)
+                    } label: {
+                        PipelineRowView(pipeline: pipeline, showsJobs: false)
+                    }
                 }
 
                 if let error = viewModel.error {

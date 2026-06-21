@@ -11,6 +11,8 @@ final class LocalPollingService {
 
     private let defaults: UserDefaults
     private var pollingTask: Task<Void, Never>?
+    private var previousPipelines: [Pipeline] = []
+    private var hasObservedPipelines = false
 
     private(set) var isEnabled: Bool
     private(set) var intervalMinutes: Int
@@ -31,6 +33,8 @@ final class LocalPollingService {
         defaults.set(enabled, forKey: DefaultsKey.isEnabled)
         if !enabled {
             stop()
+            previousPipelines = []
+            hasObservedPipelines = false
             Task { await clearBadge() }
         }
     }
@@ -76,6 +80,14 @@ final class LocalPollingService {
             let count = Pipeline.localBadgeCount(for: pipelines)
             badgeCount = count
             try await UNUserNotificationCenter.current().setBadgeCount(count)
+
+            let events = hasObservedPipelines ? PipelineNotificationEvent.detect(previous: previousPipelines, current: pipelines) : []
+            previousPipelines = pipelines
+            hasObservedPipelines = true
+            for event in events {
+                try await scheduleNotification(for: event)
+            }
+
             lastRefreshDate = Date()
             lastError = nil
         } catch {
@@ -88,7 +100,71 @@ final class LocalPollingService {
         try? await UNUserNotificationCenter.current().setBadgeCount(0)
     }
 
+    private func scheduleNotification(for event: PipelineNotificationEvent) async throws {
+        let content = UNMutableNotificationContent()
+        content.sound = .default
+        content.title = notificationTitle(for: event)
+        content.body = notificationBody(for: event)
+        content.userInfo = [
+            "type": event.kind.payloadType,
+            "pipeline_id": event.pipelineID,
+            "status": event.status.rawValue
+        ]
+
+        let request = UNNotificationRequest(
+            identifier: "pipeline-\(event.id)",
+            content: content,
+            trigger: nil
+        )
+        try await UNUserNotificationCenter.current().add(request)
+    }
+
+    private func notificationTitle(for event: PipelineNotificationEvent) -> String {
+        switch event.kind {
+        case .started: String(localized: "Pipeline Started")
+        case .completed: String(localized: "Pipeline Completed")
+        }
+    }
+
+    private func notificationBody(for event: PipelineNotificationEvent) -> String {
+        let statusText = event.status.notificationText
+        if let projectFullPath = event.projectFullPath {
+            return "\(event.title) · \(projectFullPath) · \(statusText)"
+        }
+        return "\(event.title) · \(statusText)"
+    }
+
     private static func clampedInterval(_ minutes: Int) -> Int {
         min(max(minutes, 1), 60)
+    }
+}
+
+private extension PipelineNotificationEvent.Kind {
+    var payloadType: String {
+        switch self {
+        case .started: NotificationPayload.EventType.pipelineStarted.rawValue
+        case .completed: NotificationPayload.EventType.pipelineCompleted.rawValue
+        }
+    }
+}
+
+private extension Pipeline.Status {
+    var notificationText: String {
+        switch self {
+        case .created: String(localized: "Created")
+        case .waiting: String(localized: "Waiting")
+        case .preparing: String(localized: "Preparing")
+        case .pending: String(localized: "Pending")
+        case .running: String(localized: "Running")
+        case .success: String(localized: "Passed")
+        case .failed: String(localized: "Failed")
+        case .canceled: String(localized: "Canceled")
+        case .skipped: String(localized: "Skipped")
+        case .manual: String(localized: "Manual")
+        case .scheduled: String(localized: "Scheduled")
+        case .canceling: String(localized: "Canceling")
+        case .waitingForCallback: String(localized: "Waiting")
+        case .waitingForResource: String(localized: "Waiting")
+        }
     }
 }

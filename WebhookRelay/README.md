@@ -4,10 +4,11 @@ GLabTouch expects GitLab webhook relays to normalize events into the app payload
 
 ```json
 {
-  "type": "mr_assigned | mr_approved | mr_merged | pipeline_failed",
+  "type": "mr_assigned | mr_approved | mr_merged | pipeline_started | pipeline_completed | pipeline_failed",
   "instance": "https://gitlab.example.com",
   "project": { "id": 123, "name": "my-project" },
   "merge_request": { "iid": 42, "title": "feat: mobile approval" },
+  "pipeline": { "id": 456, "ref": "main", "status": "running" },
   "actor": { "username": "alice", "avatar_url": "https://gitlab.example.com/uploads/avatar.png" },
   "timestamp": "2026-06-21T10:00:00Z"
 }
@@ -16,7 +17,7 @@ GLabTouch expects GitLab webhook relays to normalize events into the app payload
 Minimum relay responsibilities:
 
 - Verify GitLab webhook secret.
-- Map GitLab merge request and pipeline events into the schema above.
+- Map GitLab merge request and pipeline start/completion/failure events into the schema above.
 - Resolve target device tokens for the user.
 - Send APNs alert payloads with the normalized event under `data`.
 - Keep token storage and user mapping outside the iOS app repository.

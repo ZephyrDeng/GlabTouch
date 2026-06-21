@@ -5,6 +5,7 @@ struct NotificationPayload: Codable {
     let instance: URL
     let project: ProjectRef
     let mergeRequest: MergeRequestRef?
+    let pipeline: PipelineRef?
     let actor: ActorRef
     let timestamp: Date
 
@@ -12,6 +13,8 @@ struct NotificationPayload: Codable {
         case mrAssigned = "mr_assigned"
         case mrApproved = "mr_approved"
         case mrMerged = "mr_merged"
+        case pipelineStarted = "pipeline_started"
+        case pipelineCompleted = "pipeline_completed"
         case pipelineFailed = "pipeline_failed"
     }
 
@@ -25,6 +28,12 @@ struct NotificationPayload: Codable {
         let title: String
     }
 
+    struct PipelineRef: Codable {
+        let id: Int
+        let ref: String?
+        let status: Pipeline.Status
+    }
+
     struct ActorRef: Codable {
         let username: String
         let avatarURL: URL?
@@ -36,7 +45,7 @@ struct NotificationPayload: Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, instance, project, actor, timestamp
+        case type, instance, project, pipeline, actor, timestamp
         case mergeRequest = "merge_request"
     }
 }

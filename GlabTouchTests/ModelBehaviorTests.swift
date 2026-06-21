@@ -7,6 +7,10 @@ struct ModelBehaviorTests {
         try testUpsertsAndRemovesGitLabInstances()
         try testDecodesPipelinesAcrossMergeRequestBuckets()
         try testCountsActionablePipelinesForLocalBadge()
+        try testDecodesPipelineIdentifiersForInteraction()
+        try testPipelineJobInteractionRules()
+        try testDetectsPipelineStartAndCompletionNotifications()
+        try testDecodesPipelineNotificationPayload()
         try testParsesUnifiedDiffLines()
         print("ModelBehaviorTests passed")
     }
@@ -163,6 +167,111 @@ struct ModelBehaviorTests {
         ]
 
         assertEqual(Pipeline.localBadgeCount(for: pipelines), 3, "local polling badge should count actionable pipeline states")
+    }
+
+    private static func testDecodesPipelineIdentifiersForInteraction() throws {
+        let json = """
+        {
+          "currentUser": {
+            "assignedMergeRequests": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/MergeRequest/1",
+                  "iid": "10",
+                  "title": "Interactive pipeline MR",
+                  "description": null,
+                  "sourceBranch": "feature/a",
+                  "targetBranch": "main",
+                  "state": "opened",
+                  "approved": false,
+                  "webUrl": "https://gitlab.example.com/project/-/merge_requests/10",
+                  "project": { "id": "gid://gitlab/Project/123", "fullPath": "group/project" },
+                  "author": { "id": "gid://gitlab/User/1", "username": "alice", "name": "Alice", "avatarUrl": null },
+                  "reviewers": { "nodes": [] },
+                  "diffStats": null,
+                  "headPipeline": {
+                    "id": "gid://gitlab/Ci::Pipeline/456",
+                    "status": "RUNNING",
+                    "ref": "feature/a",
+                    "sha": "abcdef123456",
+                    "stages": { "nodes": [] }
+                  }
+                }
+              ]
+            },
+            "authoredMergeRequests": { "nodes": [] },
+            "reviewRequestedMergeRequests": { "nodes": [] }
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(CurrentUserResponse.self, from: json)
+        let pipeline = try unwrap(response.currentUser.allMergeRequests.first?.toMergeRequest().headPipeline, "MR should include a pipeline")
+
+        assertEqual(pipeline.pipelineID, 456, "pipeline numeric ID should be extracted for REST interactions")
+        assertEqual(pipeline.projectID, 123, "pipeline project ID should be carried for REST interactions")
+    }
+
+    private static func testPipelineJobInteractionRules() throws {
+        assertEqual(
+            PipelineJobAction.availableActions(for: PipelineJob(id: 1, name: "deploy", stage: "deploy", status: .manual)),
+            [.play],
+            "manual jobs should be playable"
+        )
+        assertEqual(
+            PipelineJobAction.availableActions(for: PipelineJob(id: 2, name: "unit", stage: "test", status: .failed)),
+            [.retry],
+            "failed jobs should be retryable"
+        )
+        assertEqual(
+            PipelineJobAction.availableActions(for: PipelineJob(id: 3, name: "lint", stage: "test", status: .running)),
+            [.cancel],
+            "running jobs should be cancellable"
+        )
+        assertEqual(
+            PipelineJobAction.availableActions(for: PipelineJob(id: 4, name: "build", stage: "build", status: .success)),
+            [],
+            "completed successful jobs should expose no mutation action"
+        )
+    }
+
+    private static func testDetectsPipelineStartAndCompletionNotifications() throws {
+        let previous = [
+            Pipeline(id: "pipeline-a", status: .pending, pipelineID: 1, projectID: 10, mergeRequestTitle: "A"),
+            Pipeline(id: "pipeline-b", status: .running, pipelineID: 2, projectID: 10, mergeRequestTitle: "B"),
+            Pipeline(id: "pipeline-c", status: .success, pipelineID: 3, projectID: 10, mergeRequestTitle: "C")
+        ]
+        let current = [
+            Pipeline(id: "pipeline-a", status: .running, pipelineID: 1, projectID: 10, mergeRequestTitle: "A"),
+            Pipeline(id: "pipeline-b", status: .failed, pipelineID: 2, projectID: 10, mergeRequestTitle: "B"),
+            Pipeline(id: "pipeline-c", status: .success, pipelineID: 3, projectID: 10, mergeRequestTitle: "C")
+        ]
+
+        let events = PipelineNotificationEvent.detect(previous: previous, current: current)
+
+        assertEqual(events.map(\.kind), [.started, .completed], "status transitions should produce start and completion events")
+        assertEqual(events.map(\.pipelineID), [1, 2], "events should identify the changed pipelines")
+    }
+
+    private static func testDecodesPipelineNotificationPayload() throws {
+        let json = """
+        {
+          "type": "pipeline_started",
+          "instance": "https://gitlab.example.com",
+          "project": { "id": 123, "name": "project" },
+          "pipeline": { "id": 456, "ref": "main", "status": "running" },
+          "actor": { "username": "alice", "avatar_url": null },
+          "timestamp": "2026-06-21T10:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let payload = try decoder.decode(NotificationPayload.self, from: json)
+
+        assertEqual(payload.type, .pipelineStarted, "pipeline started payload type should decode")
+        assertEqual(payload.pipeline?.id, 456, "pipeline payload should include an id")
+        assertEqual(payload.pipeline?.status, .running, "pipeline payload should decode status")
     }
 
     private static func testParsesUnifiedDiffLines() throws {

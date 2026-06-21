@@ -43,7 +43,11 @@ struct MergeRequestDetailView: View {
 
             if let pipeline = mergeRequest.headPipeline {
                 Section("Pipeline") {
-                    PipelineRowView(pipeline: pipeline, showsJobs: true)
+                    NavigationLink {
+                        PipelineDetailView(pipeline: pipeline)
+                    } label: {
+                        PipelineRowView(pipeline: pipeline, showsJobs: true)
+                    }
                 }
             }
 
