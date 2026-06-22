@@ -18,9 +18,10 @@
 - OAuth redirect URI for GitLab applications: `glabtouch://oauth/callback`
 - Public Beta group: configured in App Store Connect
 - Public Link: enabled; accepts public testers after Apple sets the build to `BETA_APPROVED`
-- Build 5 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=READY_FOR_BETA_SUBMISSION`
-- Build 5 Beta Review submission on 2026-06-22: blocked by App Store Connect because build 4 is already waiting for Beta Review in the same version train
-- Build 4 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
+- Build 5 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
+- Build 5 Beta Review submission on 2026-06-22: submitted successfully with `betaReviewState=WAITING_FOR_REVIEW`
+- Build 4 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=READY_FOR_BETA_SUBMISSION`
+- Build 4 Beta Review submission on 2026-06-22: removed from review in App Store Connect to allow build 5 submission
 - Build 3 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
 - Build 2 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=IN_BETA_TESTING`
 - Build 1 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=NOT_APPLICABLE`
