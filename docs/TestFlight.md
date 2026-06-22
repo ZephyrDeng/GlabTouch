@@ -13,11 +13,12 @@
 
 - App Name: `GLabTouch`
 - Bundle ID: `com.zephyrdeng.GlabTouch`
-- Version: `1.1.0`
-- Current build: `3`
+- Version: `1.2.0`
+- Current build: `4`
 - OAuth redirect URI for GitLab applications: `glabtouch://oauth/callback`
 - Public Beta group: configured in App Store Connect
-- Public Link: publish intentionally from App Store Connect when accepting public testers
+- Public Link: enabled; accepts public testers after Apple sets the build to `BETA_APPROVED`
+- Build 4 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
 - Build 3 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
 - Build 2 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=IN_BETA_TESTING`
 - Build 1 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=NOT_APPLICABLE`
@@ -40,7 +41,7 @@ Commit and tag order for a TestFlight release:
 4. Update `docs/TestFlight.md` with the verified App Store Connect state.
 5. Create or move the annotated tag `v<MARKETING_VERSION>` to the final release-ready commit.
 
-For the current release line, `v1.1.0` should point at the final commit that includes build `3`, TestFlight upload automation, export compliance, and release documentation.
+For the current release line, `v1.2.0` should point at the final commit that includes build `4`, TestFlight upload, export compliance, and release documentation.
 
 Historical note: build `2` was uploaded on `2026-06-21T07:19:37-07:00` before this workflow was codified. From build `3` onward, every App Store Connect upload build number must appear in a committed version bump.
 
@@ -171,7 +172,7 @@ Because `destination=upload`, the export may skip a local `build/TestFlight` IPA
 Current Beta Review setup:
 
 - Beta App Description explains GLabTouch as an iOS client for GitLab self-hosted instances.
-- What to Test asks testers to verify instance URL + PAT sign-in, MR filters, pipeline status, settings, and approval/revoke flows.
+- What to Test asks testers to verify GitLab instance sign-in, assigned/created/review-requested MR filters, pipeline status display, pipeline detail navigation, settings, and approval/revoke flows where permissions allow it.
 - Demo account is marked as optional.
 - Review notes say testers provide their own GitLab instance URL and Personal Access Token.
 
