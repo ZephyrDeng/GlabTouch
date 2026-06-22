@@ -35,9 +35,8 @@ struct MergeRequestDetailView: View {
                 }
 
                 if let webURL = mergeRequest.webURL {
-                    Button("Open in GitLab") {
-                        openURL(webURL)
-                    }
+                    Link("Open in GitLab", destination: webURL)
+                        .accessibilityHint(Text("Opens this merge request in the GitLab web interface"))
                 }
             }
 
@@ -94,10 +93,21 @@ struct MergeRequestDetailView: View {
         .navigationTitle("Merge Request")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(mergeRequest.approved ? "Revoke" : "Approve") {
-                    Task { await toggleApproval() }
+                if mergeRequest.approved {
+                    Button("Revoke", role: .destructive) {
+                        Task { await toggleApproval() }
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityHint(Text("Removes your approval from this merge request"))
+                    .disabled(viewModel.isApproving)
+                } else {
+                    Button("Approve") {
+                        Task { await toggleApproval() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityHint(Text("Approves this merge request"))
+                    .disabled(viewModel.isApproving)
                 }
-                .disabled(viewModel.isApproving)
             }
         }
         .refreshable {
@@ -207,7 +217,7 @@ struct DiffLineView: View {
         }
         .font(AppFont.mono)
         .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 3)
+        .padding(.vertical, Spacing.xs)
         .background(line.kind.backgroundStyle)
     }
 

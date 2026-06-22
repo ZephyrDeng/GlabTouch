@@ -7,6 +7,8 @@ struct PipelineStatusBadge: View {
         Label(status.displayName, systemImage: status.iconName)
             .font(AppFont.metadata)
             .foregroundStyle(status.color)
+            .symbolEffect(.pulse, value: status)
+            .accessibilityLabel(Text("Pipeline \(status.displayName)"))
     }
 }
 

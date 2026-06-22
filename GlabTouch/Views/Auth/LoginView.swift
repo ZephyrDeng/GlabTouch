@@ -69,6 +69,8 @@ struct LoginView: View {
                             }
                         }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityHint(Text("Signs in to the GitLab instance"))
                     .disabled(isSignInDisabled)
                 }
             }

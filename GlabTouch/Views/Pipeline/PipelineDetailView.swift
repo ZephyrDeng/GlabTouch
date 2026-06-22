@@ -17,9 +17,8 @@ struct PipelineDetailView: View {
                 PipelineRowView(pipeline: pipeline, showsJobs: false)
 
                 if let webURL = pipeline.webURL {
-                    Button("Open in GitLab") {
-                        openURL(webURL)
-                    }
+                    Link("Open in GitLab", destination: webURL)
+                        .accessibilityHint(Text("Opens this pipeline in the GitLab web interface"))
                 }
             }
 
@@ -28,11 +27,15 @@ struct PipelineDetailView: View {
                     Button("Retry Pipeline") {
                         Task { await retryPipeline(projectID: projectID, pipelineID: pipelineID) }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityHint(Text("Reruns the entire pipeline"))
                     .disabled(viewModel.isMutating)
 
                     Button("Cancel Pipeline", role: .destructive) {
                         Task { await cancelPipeline(projectID: projectID, pipelineID: pipelineID) }
                     }
+                    .buttonStyle(.bordered)
+                    .accessibilityHint(Text("Stops the pipeline execution"))
                     .disabled(viewModel.isMutating)
                 }
 
@@ -169,7 +172,7 @@ private struct PipelineStageDisclosureRow: View {
                         .frame(minWidth: 64, alignment: .trailing)
 
                     Image(systemName: "chevron.down")
-                        .font(.footnote.weight(.semibold))
+                        .font(AppFont.tertiary.weight(.semibold))
                         .foregroundStyle(TextColor.secondary)
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
                         .frame(width: 24, height: 24)
@@ -178,6 +181,7 @@ private struct PipelineStageDisclosureRow: View {
                 .padding(.vertical, Spacing.sm)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("Stage: \(group.stage)"))
             .accessibilityValue(Text(isExpanded ? "Expanded" : "Collapsed"))
 
             if isExpanded {
@@ -237,6 +241,7 @@ private struct PipelineJobRowView: View {
                 } label: {
                     Label("Trace", systemImage: "terminal")
                 }
+                .accessibilityLabel(Text("View trace for \(job.name)"))
 
                 Spacer()
 
@@ -247,6 +252,7 @@ private struct PipelineJobRowView: View {
                         Label(action.title, systemImage: action.iconName)
                     }
                     .buttonStyle(.bordered)
+                    .accessibilityHint(Text(action.accessibilityHint))
                     .disabled(isMutating)
                 }
             }
@@ -341,6 +347,14 @@ private extension PipelineJobAction {
         switch self {
         case .cancel: .destructive
         case .play, .retry: nil
+        }
+    }
+
+    var accessibilityHint: String {
+        switch self {
+        case .play: String(localized: "Triggers this job to run")
+        case .retry: String(localized: "Reruns this job")
+        case .cancel: String(localized: "Cancels this job")
         }
     }
 }

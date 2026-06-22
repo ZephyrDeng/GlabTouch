@@ -18,6 +18,7 @@ struct SettingsView: View {
 
                 Section("Saved Instances") {
                     ForEach(authService.savedInstances) { instance in
+                        let isActive = authService.currentInstance?.id == instance.id
                         Button {
                             try? authService.switchInstance(instance)
                         } label: {
@@ -29,13 +30,19 @@ struct SettingsView: View {
                                         .foregroundStyle(TextColor.secondary)
                                 }
                                 Spacer()
-                                if authService.currentInstance?.id == instance.id {
+                                if isActive {
                                     Label("Active", systemImage: "checkmark.circle.fill")
                                         .labelStyle(.iconOnly)
                                         .foregroundStyle(TextColor.approved)
+                                } else {
+                                    Image(systemName: "arrow.right.circle")
+                                        .foregroundStyle(TextColor.secondary)
                                 }
                             }
                         }
+                        .accessibilityLabel(Text("Switch to \(instance.name)"))
+                        .accessibilityHint(isActive ? Text("This is the active instance") : Text("Switches to this GitLab instance"))
+                        .disabled(isActive)
                     }
                     .onDelete(perform: forgetInstances)
                 }
@@ -57,6 +64,7 @@ struct SettingsView: View {
                             try? await notificationService.requestAuthorization()
                         }
                     }
+                    .accessibilityHint(Text("Requests permission to send push notifications"))
                 }
 
                 Section("Local Polling") {
@@ -85,12 +93,15 @@ struct SettingsView: View {
                             Text("Refresh Badge Now")
                         }
                     }
+                    .accessibilityHint(Text("Checks for new merge requests and updates the badge count"))
                 }
 
                 Section {
                     Button("Sign Out", role: .destructive) {
                         try? authService.logout()
                     }
+                    .buttonStyle(.bordered)
+                    .accessibilityHint(Text("Signs out of the current GitLab instance"))
                 }
 
                 Section("About") {
