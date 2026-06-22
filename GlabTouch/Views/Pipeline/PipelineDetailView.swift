@@ -268,6 +268,7 @@ private struct PipelineJobRowView: View {
 
 struct PipelineJobTraceView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.colorScheme) private var colorScheme
 
     let projectID: Int
     let job: PipelineJob
@@ -293,7 +294,7 @@ struct PipelineJobTraceView: View {
                 )
                 .padding()
             } else {
-                Text(viewModel.trace)
+                Text(ANSIParser.parse(viewModel.trace, colorScheme: colorScheme))
                     .font(AppFont.mono)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
