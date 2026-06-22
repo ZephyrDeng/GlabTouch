@@ -200,10 +200,11 @@ struct MarkdownWebView: UIViewRepresentable {
             }
         }
 
+        @MainActor
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+            decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
         ) {
             guard navigationAction.navigationType == .linkActivated,
                   let url = navigationAction.request.url
@@ -212,9 +213,7 @@ struct MarkdownWebView: UIViewRepresentable {
                 return
             }
 
-            Task { @MainActor in
-                UIApplication.shared.open(url)
-            }
+            UIApplication.shared.open(url)
             decisionHandler(.cancel)
         }
 
