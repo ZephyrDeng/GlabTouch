@@ -9,6 +9,8 @@ struct ModelBehaviorTests {
         try testDecodesPipelinesAcrossMergeRequestBuckets()
         try testCountsActionablePipelinesForLocalBadge()
         try testDecodesPipelineIdentifiersForInteraction()
+        try testDiscoversReviewWorkspaceProjects()
+        try testDecodesMyTriggeredPipelinesAndBuildsSnapshots()
         try testPipelineJobInteractionRules()
         try testGroupsPipelineJobsForStableStageDisclosure()
         try testDetectsPipelineStartAndCompletionNotifications()
@@ -252,6 +254,133 @@ struct ModelBehaviorTests {
 
         assertEqual(pipeline.pipelineID, 456, "pipeline numeric ID should be extracted for REST interactions")
         assertEqual(pipeline.projectID, 123, "pipeline project ID should be carried for REST interactions")
+    }
+
+    private static func testDiscoversReviewWorkspaceProjects() throws {
+        let json = """
+        {
+          "currentUser": {
+            "username": "zephyr",
+            "assignedMergeRequests": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/MergeRequest/1",
+                  "iid": "10",
+                  "title": "Assigned MR",
+                  "description": null,
+                  "sourceBranch": "feature/a",
+                  "targetBranch": "main",
+                  "state": "opened",
+                  "approved": false,
+                  "webUrl": null,
+                  "project": { "id": "gid://gitlab/Project/123", "fullPath": "group/project-a" },
+                  "author": { "id": "gid://gitlab/User/1", "username": "alice", "name": "Alice", "avatarUrl": null },
+                  "reviewers": { "nodes": [] },
+                  "diffStats": null,
+                  "headPipeline": null
+                }
+              ]
+            },
+            "authoredMergeRequests": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/MergeRequest/2",
+                  "iid": "11",
+                  "title": "Authored MR",
+                  "description": null,
+                  "sourceBranch": "feature/b",
+                  "targetBranch": "main",
+                  "state": "opened",
+                  "approved": false,
+                  "webUrl": null,
+                  "project": { "id": "gid://gitlab/Project/456", "fullPath": "group/project-b" },
+                  "author": { "id": "gid://gitlab/User/2", "username": "zephyr", "name": "Zephyr", "avatarUrl": null },
+                  "reviewers": { "nodes": [] },
+                  "diffStats": null,
+                  "headPipeline": null
+                }
+              ]
+            },
+            "reviewRequestedMergeRequests": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/MergeRequest/1",
+                  "iid": "10",
+                  "title": "Assigned MR duplicate",
+                  "description": null,
+                  "sourceBranch": "feature/a",
+                  "targetBranch": "main",
+                  "state": "opened",
+                  "approved": false,
+                  "webUrl": null,
+                  "project": { "id": "gid://gitlab/Project/123", "fullPath": "group/project-a" },
+                  "author": { "id": "gid://gitlab/User/1", "username": "alice", "name": "Alice", "avatarUrl": null },
+                  "reviewers": { "nodes": [] },
+                  "diffStats": null,
+                  "headPipeline": null
+                }
+              ]
+            }
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(CurrentUserResponse.self, from: json)
+
+        assertEqual(response.currentUser.username, "zephyr", "current user username should decode for my triggered pipeline queries")
+        assertEqual(
+            response.currentUser.reviewWorkspaceProjects,
+            [
+                ReviewWorkspaceProject(projectID: 123, fullPath: "group/project-a"),
+                ReviewWorkspaceProject(projectID: 456, fullPath: "group/project-b")
+            ],
+            "review workspace projects should be unique and preserve discovery order"
+        )
+    }
+
+    private static func testDecodesMyTriggeredPipelinesAndBuildsSnapshots() throws {
+        let json = """
+        [
+          {
+            "id": 100,
+            "status": "success",
+            "source": "push",
+            "ref": "main",
+            "sha": "abcdef1234567890",
+            "updated_at": "2026-06-22T07:10:00Z",
+            "web_url": "https://gitlab.example.com/group/project/-/pipelines/100",
+            "user": { "id": 7, "username": "zephyr", "name": "Zephyr", "avatar_url": null }
+          },
+          {
+            "id": 101,
+            "status": "running",
+            "source": "web",
+            "ref": "feature/pipeline",
+            "sha": "fedcba9876543210",
+            "updated_at": "2026-06-22T07:20:00Z",
+            "web_url": "https://gitlab.example.com/group/project/-/pipelines/101",
+            "user": { "id": 7, "username": "zephyr", "name": "Zephyr", "avatar_url": null }
+          }
+        ]
+        """.data(using: .utf8)!
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let nodes = try decoder.decode([RESTPipelineNode].self, from: json)
+        let project = ReviewWorkspaceProject(projectID: 123, fullPath: "group/project")
+        let pipelines = Pipeline.sortedByUpdatedTimeDescending(nodes.map { $0.toMyTriggeredPipeline(project: project) })
+
+        assertEqual(pipelines.map(\.pipelineID), [101, 100], "my triggered pipelines should sort by updated time descending")
+        assertEqual(pipelines.first?.ownership, .myTriggered, "REST pipelines should be marked as my triggered")
+        assertEqual(pipelines.first?.triggerSource, "web", "pipeline trigger source should decode")
+        assertEqual(pipelines.first?.triggeredBy?.username, "zephyr", "triggering user should decode")
+        assertEqual(pipelines.first?.projectFullPath, "group/project", "project scope context should be carried into REST pipelines")
+
+        let snapshot = try unwrap(pipelines.first?.notificationSnapshot, "my triggered pipeline should build a notification snapshot")
+        assertEqual(snapshot.projectID, 123, "snapshot should include project ID")
+        assertEqual(snapshot.pipelineID, 101, "snapshot should include pipeline ID")
+        assertEqual(snapshot.ownership, .myTriggered, "snapshot should include ownership")
+        assertEqual(snapshot.status, .running, "snapshot should include status")
     }
 
     private static func testPipelineJobInteractionRules() throws {

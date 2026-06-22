@@ -18,6 +18,7 @@ enum GraphQLQueries {
     static let pipelineDashboard = """
     query {
       currentUser {
+        username
         assignedMergeRequests(state: opened, first: 20) {
           nodes {
             \(mergeRequestFields)

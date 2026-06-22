@@ -5,6 +5,7 @@ struct CurrentUserResponse: Decodable {
 }
 
 struct CurrentUser: Decodable {
+    let username: String?
     let assignedMergeRequests: MRConnection?
     let authoredMergeRequests: MRConnection?
     let reviewRequestedMergeRequests: MRConnection?
@@ -25,6 +26,15 @@ struct CurrentUser: Decodable {
         .filter { mergeRequest in
             seen.insert(mergeRequest.id).inserted
         }
+    }
+
+    var reviewWorkspaceProjects: [ReviewWorkspaceProject] {
+        var seen = Set<Int>()
+        return allMergeRequests
+            .map { $0.project.toReviewWorkspaceProject() }
+            .filter { project in
+                seen.insert(project.projectID).inserted
+            }
     }
 }
 
@@ -56,7 +66,7 @@ struct MRNode: Decodable {
         return MergeRequest(
             id: id,
             iid: mrIID,
-            projectID: extractProjectID(from: project.id),
+            projectID: project.numericID,
             title: title,
             description: description,
             descriptionHtml: descriptionHtml,
@@ -68,7 +78,7 @@ struct MRNode: Decodable {
             reviewers: reviewers.nodes.map { $0.toUser() },
             diffStats: diffStats?.map { DiffStat(path: $0.path, additions: $0.additions, deletions: $0.deletions) },
             headPipeline: headPipeline?.toPipeline(
-                projectID: extractProjectID(from: project.id),
+                projectID: project.numericID,
                 mergeRequestTitle: title,
                 mergeRequestIID: mrIID,
                 projectFullPath: project.fullPath,
@@ -78,14 +88,19 @@ struct MRNode: Decodable {
         )
     }
 
-    private func extractProjectID(from gid: String) -> Int {
-        Int(gid.split(separator: "/").last ?? "0") ?? 0
-    }
 }
 
 struct ProjectNode: Decodable {
     let id: String
     let fullPath: String
+
+    var numericID: Int {
+        Int(id.split(separator: "/").last ?? "0") ?? 0
+    }
+
+    func toReviewWorkspaceProject() -> ReviewWorkspaceProject {
+        ReviewWorkspaceProject(projectID: numericID, fullPath: fullPath)
+    }
 }
 
 struct UserNode: Decodable {
@@ -192,5 +207,55 @@ struct JobNode: Decodable {
     private func extractNumericID(from gid: String) -> Int? {
         guard let value = gid.split(separator: "/").last else { return nil }
         return Int(value)
+    }
+}
+
+struct RESTPipelineNode: Decodable {
+    let id: Int
+    let status: Pipeline.Status
+    let source: String?
+    let ref: String?
+    let sha: String?
+    let updatedAt: Date?
+    let webURL: URL?
+    let user: RESTUserNode?
+
+    func toMyTriggeredPipeline(project: ReviewWorkspaceProject) -> Pipeline {
+        Pipeline(
+            id: "\(project.projectID):\(id)",
+            status: status,
+            ref: ref,
+            sha: sha,
+            pipelineID: id,
+            projectID: project.projectID,
+            projectFullPath: project.fullPath,
+            webURL: webURL,
+            ownership: .myTriggered,
+            updatedAt: updatedAt,
+            triggeredBy: user?.toUser(),
+            triggerSource: source
+        )
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, status, source, ref, sha, user
+        case updatedAt = "updated_at"
+        case webURL = "web_url"
+    }
+}
+
+struct RESTUserNode: Decodable {
+    let id: Int
+    let username: String
+    let name: String
+    let avatarURL: URL?
+
+    func toUser() -> User {
+        User(id: String(id), username: username, name: name, avatarURL: avatarURL)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, username, name
+        case avatarURL = "avatar_url"
     }
 }

@@ -104,8 +104,34 @@ final class GitLabAPIClient {
     }
 
     func pipelineDashboard() async throws -> [Pipeline] {
+        try await pipelineDashboardContext().mrRelatedPipelines
+    }
+
+    func pipelineDashboardContext() async throws -> PipelineDashboardContext {
         let response: CurrentUserResponse = try await graphQL(GraphQLQueries.pipelineDashboard)
-        return response.currentUser.allMergeRequests.compactMap { $0.toMergeRequest().headPipeline }
+        return PipelineDashboardContext(
+            username: response.currentUser.username,
+            mrRelatedPipelines: response.currentUser.allMergeRequests.compactMap { $0.toMergeRequest().headPipeline },
+            reviewWorkspaceProjects: response.currentUser.reviewWorkspaceProjects
+        )
+    }
+
+    func myTriggeredPipelines(username: String, projects: [ReviewWorkspaceProject]) async throws -> [Pipeline] {
+        var pipelines: [Pipeline] = []
+        for project in projects {
+            let nodes: [RESTPipelineNode] = try await rest(
+                "GET",
+                path: "projects/\(project.projectID)/pipelines",
+                queryItems: [
+                    URLQueryItem(name: "username", value: username),
+                    URLQueryItem(name: "per_page", value: "50"),
+                    URLQueryItem(name: "order_by", value: "updated_at"),
+                    URLQueryItem(name: "sort", value: "desc")
+                ]
+            )
+            pipelines.append(contentsOf: nodes.map { $0.toMyTriggeredPipeline(project: project) })
+        }
+        return Pipeline.sortedByUpdatedTimeDescending(pipelines)
     }
 
     func pipelineJobs(projectID: Int, pipelineID: Int) async throws -> [PipelineJob] {

@@ -1,5 +1,16 @@
 import Foundation
 
+struct ReviewWorkspaceProject: Hashable {
+    let projectID: Int
+    let fullPath: String
+}
+
+struct PipelineDashboardContext {
+    let username: String?
+    let mrRelatedPipelines: [Pipeline]
+    let reviewWorkspaceProjects: [ReviewWorkspaceProject]
+}
+
 struct Pipeline: Identifiable, Hashable {
     let id: String
     let status: Status
@@ -12,6 +23,10 @@ struct Pipeline: Identifiable, Hashable {
     let mergeRequestIID: Int?
     let projectFullPath: String?
     let webURL: URL?
+    let ownership: Ownership
+    let updatedAt: Date?
+    let triggeredBy: User?
+    let triggerSource: String?
 
     init(
         id: String,
@@ -24,7 +39,11 @@ struct Pipeline: Identifiable, Hashable {
         mergeRequestTitle: String? = nil,
         mergeRequestIID: Int? = nil,
         projectFullPath: String? = nil,
-        webURL: URL? = nil
+        webURL: URL? = nil,
+        ownership: Ownership = .mrRelated,
+        updatedAt: Date? = nil,
+        triggeredBy: User? = nil,
+        triggerSource: String? = nil
     ) {
         self.id = id
         self.status = status
@@ -37,10 +56,30 @@ struct Pipeline: Identifiable, Hashable {
         self.mergeRequestIID = mergeRequestIID
         self.projectFullPath = projectFullPath
         self.webURL = webURL
+        self.ownership = ownership
+        self.updatedAt = updatedAt
+        self.triggeredBy = triggeredBy
+        self.triggerSource = triggerSource
     }
 
     var shortSHA: String? {
         sha.map { String($0.prefix(8)) }
+    }
+
+    var notificationSnapshot: PipelineSnapshot? {
+        guard let projectID, let pipelineID else { return nil }
+        return PipelineSnapshot(
+            projectID: projectID,
+            pipelineID: pipelineID,
+            status: status,
+            ref: ref,
+            sha: sha,
+            projectFullPath: projectFullPath,
+            mergeRequestTitle: mergeRequestTitle,
+            mergeRequestIID: mergeRequestIID,
+            ownership: ownership,
+            updatedAt: updatedAt
+        )
     }
 
     var countsTowardLocalBadge: Bool {
@@ -74,6 +113,21 @@ struct Pipeline: Identifiable, Hashable {
         pipelines.filter(\.countsTowardLocalBadge).count
     }
 
+    static func sortedByUpdatedTimeDescending(_ pipelines: [Pipeline]) -> [Pipeline] {
+        pipelines.sorted { lhs, rhs in
+            switch (lhs.updatedAt, rhs.updatedAt) {
+            case let (lhs?, rhs?):
+                lhs > rhs
+            case (_?, nil):
+                true
+            case (nil, _?):
+                false
+            case (nil, nil):
+                lhs.id < rhs.id
+            }
+        }
+    }
+
     enum Status: String, Codable {
         case created, waiting, preparing, pending
         case running, success, failed, canceled
@@ -82,6 +136,24 @@ struct Pipeline: Identifiable, Hashable {
         case waitingForCallback = "waiting_for_callback"
         case waitingForResource = "waiting_for_resource"
     }
+
+    enum Ownership: String, Codable {
+        case mrRelated = "mr_related"
+        case myTriggered = "my_triggered"
+    }
+}
+
+struct PipelineSnapshot: Hashable, Codable {
+    let projectID: Int
+    let pipelineID: Int
+    let status: Pipeline.Status
+    let ref: String?
+    let sha: String?
+    let projectFullPath: String?
+    let mergeRequestTitle: String?
+    let mergeRequestIID: Int?
+    let ownership: Pipeline.Ownership
+    let updatedAt: Date?
 }
 
 struct Stage: Identifiable, Hashable {

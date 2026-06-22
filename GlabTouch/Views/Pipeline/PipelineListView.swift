@@ -7,11 +7,18 @@ struct PipelineListView: View {
     var body: some View {
         NavigationStack {
             List {
+                Picker("Pipeline View", selection: selectedTabBinding) {
+                    ForEach(PipelineListViewModel.PipelineTab.allCases) { tab in
+                        Text(tab.title).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 if viewModel.pipelines.isEmpty && !viewModel.isLoading {
                     ContentUnavailableView(
-                        "No Pipelines",
+                        emptyStateTitle,
                         systemImage: "circle.dashed",
-                        description: Text("Pipeline status will appear here.")
+                        description: Text(emptyStateDescription)
                     )
                 }
 
@@ -39,6 +46,27 @@ struct PipelineListView: View {
             .task {
                 await loadData()
             }
+        }
+    }
+
+    private var selectedTabBinding: Binding<PipelineListViewModel.PipelineTab> {
+        Binding(
+            get: { viewModel.selectedTab },
+            set: { viewModel.selectedTab = $0 }
+        )
+    }
+
+    private var emptyStateTitle: String {
+        switch viewModel.selectedTab {
+        case .mrRelated: String(localized: "No MR-Related Pipelines")
+        case .myTriggered: String(localized: "No My Triggered Pipelines")
+        }
+    }
+
+    private var emptyStateDescription: String {
+        switch viewModel.selectedTab {
+        case .mrRelated: String(localized: "Pipeline status from your merge requests will appear here.")
+        case .myTriggered: String(localized: "Pipelines you triggered in review workspace projects will appear here.")
         }
     }
 
@@ -78,6 +106,12 @@ struct PipelineRowView: View {
                 }
                 if let iid = pipeline.mergeRequestIID {
                     Label("!\(iid)", systemImage: "number")
+                }
+                if pipeline.ownership == .myTriggered {
+                    Label("Mine", systemImage: "person.crop.circle")
+                }
+                if let triggerSource = pipeline.triggerSource {
+                    Text(triggerSource)
                 }
                 if let projectFullPath = pipeline.projectFullPath {
                     Text(projectFullPath)
