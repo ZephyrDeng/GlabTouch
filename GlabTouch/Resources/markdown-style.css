@@ -1,0 +1,162 @@
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+:root {
+  color-scheme: light dark;
+  --text-primary: #1c1c1e;
+  --text-secondary: rgba(60, 60, 67, 0.68);
+  --border: rgba(60, 60, 67, 0.29);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-strong: rgba(120, 120, 128, 0.18);
+  --link: #0a84ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #f2f2f7;
+    --text-secondary: rgba(235, 235, 245, 0.6);
+    --border: rgba(84, 84, 88, 0.65);
+    --fill: rgba(120, 120, 128, 0.24);
+    --fill-strong: rgba(120, 120, 128, 0.32);
+    --link: #64d2ff;
+  }
+}
+
+body {
+  margin: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+p,
+ul,
+ol,
+blockquote,
+pre,
+table {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+p:last-child,
+ul:last-child,
+ol:last-child,
+blockquote:last-child,
+pre:last-child,
+table:last-child {
+  margin-bottom: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 16px 0 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+h2 {
+  font-size: 20px;
+}
+
+h3 {
+  font-size: 17px;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 15px;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+ul,
+ol {
+  padding-left: 24px;
+}
+
+li + li {
+  margin-top: 4px;
+}
+
+blockquote {
+  padding-left: 12px;
+  border-left: 4px solid var(--border);
+  color: var(--text-secondary);
+}
+
+code,
+pre {
+  font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+code {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--fill);
+}
+
+pre {
+  overflow-x: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--fill);
+  line-height: 1.5;
+}
+
+pre code {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--fill-strong);
+  font-weight: 600;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
