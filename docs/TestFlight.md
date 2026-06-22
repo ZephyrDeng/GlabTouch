@@ -14,10 +14,12 @@
 - App Name: `GLabTouch`
 - Bundle ID: `com.zephyrdeng.GlabTouch`
 - Version: `1.2.0`
-- Current build: `4`
+- Current build: `5`
 - OAuth redirect URI for GitLab applications: `glabtouch://oauth/callback`
 - Public Beta group: configured in App Store Connect
 - Public Link: enabled; accepts public testers after Apple sets the build to `BETA_APPROVED`
+- Build 5 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=READY_FOR_BETA_SUBMISSION`
+- Build 5 Beta Review submission on 2026-06-22: blocked by App Store Connect because build 4 is already waiting for Beta Review in the same version train
 - Build 4 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
 - Build 3 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=WAITING_FOR_BETA_REVIEW`
 - Build 2 state on 2026-06-22: `processingState=VALID`, `internalBuildState=IN_BETA_TESTING`, `externalBuildState=IN_BETA_TESTING`
@@ -41,7 +43,7 @@ Commit and tag order for a TestFlight release:
 4. Update `docs/TestFlight.md` with the verified App Store Connect state.
 5. Create or move the annotated tag `v<MARKETING_VERSION>` to the final release-ready commit.
 
-For the current release line, `v1.2.0` should point at the final commit that includes build `4`, TestFlight upload, export compliance, and release documentation.
+For the current release line, `v1.2.0` should point at the final commit that includes build `5`, TestFlight upload, export compliance, and release documentation.
 
 Historical note: build `2` was uploaded on `2026-06-21T07:19:37-07:00` before this workflow was codified. From build `3` onward, every App Store Connect upload build number must appear in a committed version bump.
 
