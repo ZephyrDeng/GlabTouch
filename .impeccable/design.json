@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-22T00:00:00Z",
+  "title": "Design System: GlabTouch",
+  "extensions": {
+    "colorMeta": {
+      "indicator-blue": {
+        "role": "primary",
+        "displayName": "Indicator Blue",
+        "canonical": "SwiftUI .blue / #007AFF",
+        "tonalRamp": ["#001A33", "#003366", "#004D99", "#0066CC", "#007AFF", "#3395FF", "#66B0FF", "#99CAFF"]
+      },
+      "verdict-green": {
+        "role": "semantic",
+        "displayName": "Verdict Green",
+        "canonical": "SwiftUI .green / #34C759",
+        "tonalRamp": ["#0A2912", "#145224", "#1F7B36", "#29A448", "#34C759", "#5CD37A", "#85DF9C", "#ADEBBD"]
+      },
+      "alert-red": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "canonical": "SwiftUI .red / #FF3B30",
+        "tonalRamp": ["#330C0A", "#661813", "#99241D", "#CC3026", "#FF3B30", "#FF6259", "#FF8983", "#FFB0AC"]
+      },
+      "caution-amber": {
+        "role": "semantic",
+        "displayName": "Caution Amber",
+        "canonical": "SwiftUI .orange / #FF9500",
+        "tonalRamp": ["#331E00", "#663D00", "#995B00", "#CC7A00", "#FF9500", "#FFAA33", "#FFBF66", "#FFD499"]
+      },
+      "manual-violet": {
+        "role": "semantic",
+        "displayName": "Manual Violet",
+        "canonical": "SwiftUI .purple / #AF52DE",
+        "tonalRamp": ["#23102C", "#461F59", "#692F85", "#8C3FB2", "#AF52DE", "#BF74E5", "#CF97EB", "#DFB9F2"]
+      },
+      "schedule-teal": {
+        "role": "semantic",
+        "displayName": "Schedule Teal",
+        "canonical": "SwiftUI .teal / #30B0C7",
+        "tonalRamp": ["#0A2328", "#143D4F", "#1F6077", "#29839F", "#30B0C7", "#59C0D2", "#83D0DD", "#ACE0E9"]
+      },
+      "neutral-slate": {
+        "role": "neutral",
+        "displayName": "Neutral Slate",
+        "canonical": "SwiftUI .gray / #8E8E93",
+        "tonalRamp": ["#1C1C1E", "#3A3A3C", "#58585A", "#737378", "#8E8E93", "#A4A4A9", "#BBBBBF", "#D1D1D5"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "SwiftUI .primary / #1C1C1E",
+        "tonalRamp": ["#000000", "#0A0A0A", "#141414", "#1C1C1E", "#3A3A3C", "#58585A", "#737378", "#8E8E93"]
+      },
+      "surface-grouped": {
+        "role": "neutral",
+        "displayName": "Surface Grouped",
+        "canonical": "SwiftUI .systemGroupedBackground / #F2F2F7",
+        "tonalRamp": ["#C8C8CD", "#D1D1D5", "#DADADF", "#E3E3E8", "#ECECF1", "#F2F2F7", "#F7F7FC", "#FDFDFFF"]
+      },
+      "surface-card": {
+        "role": "neutral",
+        "displayName": "Surface Card",
+        "canonical": "SwiftUI .systemBackground / #FFFFFF",
+        "tonalRamp": ["#D1D1D5", "#DADADF", "#E3E3E8", "#ECECF1", "#F2F2F7", "#F7F7FC", "#FBFBFF", "#FFFFFF"]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "MR titles, pipeline titles, section headers. The heaviest text in the system."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "MR descriptions, pipeline subtitles, job names. Secondary supporting content."
+      },
+      "metadata": {
+        "displayName": "Metadata",
+        "purpose": "Author names, MR IDs, branch names, timestamps. High density, low weight."
+      },
+      "tertiary": {
+        "displayName": "Tertiary",
+        "purpose": "Branch refs, file paths in compact rows. Smallest readable size."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Commit SHAs, diff lines, pipeline trace output. Fixed-width for alignment."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "stage-disclosure",
+        "value": "cubic-bezier(0.22, 1.0, 0.36, 1.0) 220ms",
+        "purpose": "Pipeline stage expand/collapse. Custom expo-out curve for snappy reveal."
+      },
+      {
+        "name": "attention-pulse",
+        "value": ".symbolEffect(.pulse) 600ms",
+        "purpose": "Status badge pulse when server state changes while visible. Draws eye without interrupting reading."
+      },
+      {
+        "name": "attention-bounce",
+        "value": ".symbolEffect(.bounce) single",
+        "purpose": "Tab bar badge icon bounce on new activity arrival. Fires once, never loops."
+      },
+      {
+        "name": "content-transition",
+        "value": ".opacity + .move(edge:) 220ms expo-out",
+        "purpose": "Content appearing after state change. Falls back to opacity-only under reduceMotion."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Colored icon + label indicating pipeline or job status. The signature component.",
+      "html": "<span class=\"ds-status-badge ds-status-badge--running\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/></svg> Running</span>",
+      "css": ".ds-status-badge { display: inline-flex; align-items: center; gap: 4px; font-family: -apple-system, SF Pro Text, sans-serif; font-size: 12px; font-weight: 500; line-height: 1.33; padding: 2px 8px; border-radius: 6px; } .ds-status-badge--running { color: #007AFF; background: rgba(0, 122, 255, 0.12); } .ds-status-badge--success { color: #34C759; background: rgba(52, 199, 89, 0.12); } .ds-status-badge--failed { color: #FF3B30; background: rgba(255, 59, 48, 0.12); } .ds-status-badge--pending { color: #FF9500; background: rgba(255, 149, 0, 0.12); } .ds-status-badge--manual { color: #AF52DE; background: rgba(175, 82, 222, 0.12); } .ds-status-badge--scheduled { color: #30B0C7; background: rgba(48, 176, 199, 0.12); } .ds-status-badge--canceled { color: #8E8E93; background: rgba(142, 142, 147, 0.12); }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Approve, Play, Retry actions. borderedProminent style with Indicator Blue tint.",
+      "html": "<button class=\"ds-btn-primary\">Approve</button>",
+      "css": ".ds-btn-primary { font-family: -apple-system, SF Pro Text, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; background: #007AFF; border: none; border-radius: 10px; padding: 8px 16px; min-height: 44px; cursor: pointer; transition: opacity 0.15s ease-out; } .ds-btn-primary:hover { opacity: 0.85; } .ds-btn-primary:focus-visible { outline: 2px solid #007AFF; outline-offset: 2px; } .ds-btn-primary:active { opacity: 0.7; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Revoke, Cancel actions. Bordered style with destructive role, visually recessive.",
+      "html": "<button class=\"ds-btn-destructive\">Revoke</button>",
+      "css": ".ds-btn-destructive { font-family: -apple-system, SF Pro Text, sans-serif; font-size: 15px; font-weight: 500; color: #FF3B30; background: rgba(255, 59, 48, 0.12); border: none; border-radius: 10px; padding: 8px 16px; min-height: 44px; cursor: pointer; transition: opacity 0.15s ease-out; } .ds-btn-destructive:hover { background: rgba(255, 59, 48, 0.18); } .ds-btn-destructive:focus-visible { outline: 2px solid #FF3B30; outline-offset: 2px; } .ds-btn-destructive:active { opacity: 0.7; }"
+    },
+    {
+      "name": "MR Row",
+      "kind": "card",
+      "refersTo": null,
+      "description": "Merge request list item: title, author/branch metadata, status badge, approval state.",
+      "html": "<div class=\"ds-mr-row\"><div class=\"ds-mr-row__content\"><div class=\"ds-mr-row__title\">Fix authentication timeout on slow connections</div><div class=\"ds-mr-row__meta\"><span class=\"ds-mr-row__author\">ZephyrDeng</span> <span class=\"ds-mr-row__separator\">&middot;</span> <span class=\"ds-mr-row__branch\">fix/auth-timeout</span> <span class=\"ds-mr-row__separator\">&middot;</span> <span class=\"ds-mr-row__id\">!2847</span></div></div><span class=\"ds-status-badge ds-status-badge--running\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"currentColor\"/></svg> Running</span></div>",
+      "css": ".ds-mr-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #FFFFFF; font-family: -apple-system, SF Pro Text, sans-serif; } .ds-mr-row__content { flex: 1; min-width: 0; } .ds-mr-row__title { font-size: 17px; font-weight: 600; line-height: 1.29; color: #1C1C1E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-mr-row__meta { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; color: #8A8A8E; line-height: 1.33; } .ds-mr-row__separator { color: #8E8E93; } .ds-mr-row__branch { font-family: SF Mono, ui-monospace, monospace; } .ds-mr-row__id { color: #8E8E93; }"
+    },
+    {
+      "name": "Diff Line (Addition)",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Single diff line showing an added line with green tint background and monospaced text.",
+      "html": "<div class=\"ds-diff-line ds-diff-line--add\"><span class=\"ds-diff-line__prefix\">+</span><span class=\"ds-diff-line__content\">let timeout: TimeInterval = 30</span></div>",
+      "css": ".ds-diff-line { display: flex; gap: 8px; padding: 2px 12px; font-family: SF Mono, ui-monospace, monospace; font-size: 12px; line-height: 1.5; } .ds-diff-line__prefix { flex-shrink: 0; width: 12px; text-align: center; user-select: none; } .ds-diff-line__content { white-space: pre; overflow-x: auto; } .ds-diff-line--add { background: rgba(52, 199, 89, 0.12); color: #1C1C1E; } .ds-diff-line--add .ds-diff-line__prefix { color: #34C759; } .ds-diff-line--del { background: rgba(255, 59, 48, 0.12); color: #1C1C1E; } .ds-diff-line--del .ds-diff-line__prefix { color: #FF3B30; } .ds-diff-line--hunk { background: rgba(0, 122, 255, 0.10); color: #007AFF; } .ds-diff-line--context { background: transparent; color: #1C1C1E; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Field Notebook",
+    "overview": "GlabTouch is a pocket instrument for engineering review. The field notebook: carried everywhere, opened for a specific task, closed when the answer is found. Every screen serves one question: is this merge request safe to approve, is this pipeline healthy, what failed and why.\n\nThe interface defers to iOS platform conventions. SwiftUI system controls, semantic colors, and standard navigation patterns carry the interaction. Custom visual treatment is reserved for status communication, where the cost of misreading is real: pipeline health, approval state, diff severity. Everywhere else, the system font speaks, the system spacing breathes, and the tool disappears into the task.\n\nGlabTouch rejects feature-client sprawl. It rejects marketing-page styling, decorative motion, playful status treatments, and custom controls that fight native iOS expectations. A reviewer glancing at their phone during a walk should get the answer in under three seconds.",
+    "keyCharacteristics": [
+      "Status legibility over visual flair",
+      "One-handed triage optimized",
+      "iOS-native hierarchy and spacing",
+      "Destructive actions explicit and isolated",
+      "Zero third-party visual dependencies"
+    ],
+    "rules": [
+      {
+        "name": "The Status Monopoly Rule",
+        "body": "Saturated color appears only as status communication or primary action. Decoration, branding accents, and visual emphasis through color are prohibited. If a color draws the eye, it must answer a question about state.",
+        "section": "colors"
+      },
+      {
+        "name": "The SwiftUI-First Rule",
+        "body": "All colors reference SwiftUI semantic names. Hex values are light-mode reference approximations. The runtime source of truth is the semantic API, which adapts to light/dark mode and accessibility settings automatically.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Custom Sizes Rule",
+        "body": "Font sizes come from SwiftUI semantic text styles exclusively. Hardcoded point values are prohibited. Semantic styles respect Dynamic Type; hardcoded sizes break accessibility.",
+        "section": "typography"
+      },
+      {
+        "name": "The System Shadow Only Rule",
+        "body": "Custom shadow() modifiers are prohibited. The only shadows come from SwiftUI built-in sheet/popover/menu presentations. If a surface needs to feel elevated, it earns a system presentation context, not a hand-tuned shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Quiet Surface Rule",
+        "body": "The number of actionable elements visible at any scroll position is kept to a minimum. List screens show zero buttons; actions live on detail screens where the user has committed attention. Exception: inline job actions where the action IS the row's purpose.",
+        "section": "components"
+      },
+      {
+        "name": "The Depth Threshold Rule",
+        "body": "Content explainable in one or two lines of Metadata typography stays inline as a secondary description. Content requiring more context earns a NavigationLink push to a detail screen. Test: if supporting text exceeds two lines at 320pt width, it belongs on its own screen.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do use SwiftUI semantic colors for all color assignments. The semantic API adapts to dark mode, high contrast, and accessibility settings automatically.",
+      "Do use SwiftUI semantic text styles for all typography. Dynamic Type support comes free.",
+      "Do keep status information readable through both color and icon/text. A colorblind user must still distinguish success from failed via SF Symbol and label.",
+      "Do maintain 44pt minimum touch targets on all interactive elements.",
+      "Do use ContentUnavailableView for empty states.",
+      "Do respect @Environment(\\.accessibilityReduceMotion) for all animations.",
+      "Do use .refreshable for pull-to-refresh.",
+      "Do give every tappable row a disclosure chevron or explicit button styling. The user must never guess whether an element responds to touch.",
+      "Do keep action buttons on detail screens, where the user has navigated with intent. List screens are for reading and selecting.",
+      "Do add a one-line secondary description (Body typography, .secondary foreground, max 2 lines) beneath titles when the context is simple enough to explain inline.",
+      "Do use .symbolEffect(.pulse) on status badges when server state changes while the view is visible."
+    ],
+    "donts": [
+      "Don't use marketing-page styling: no hero sections, gradient backgrounds, decorative illustrations, or promotional copy.",
+      "Don't add decorative motion: no page-load sequences, parallax, or choreographed entrances.",
+      "Don't use playful status treatments: pipeline state is engineering data, not game achievements.",
+      "Don't build custom controls that fight native iOS expectations: no custom tab bars, navigation chrome, or scroll behaviors.",
+      "Don't attempt full-feature GitLab client sprawl: every screen answers one question about MR or pipeline state.",
+      "Don't use hardcoded font sizes. Semantic text styles only.",
+      "Don't use hardcoded color values. Semantic color names only.",
+      "Don't add custom shadows via .shadow() modifier.",
+      "Don't use saturated color for decoration. Every non-neutral color maps to a specific status meaning or primary action.",
+      "Don't put action buttons on list screens. Inline approve/cancel buttons create accidental taps and visual noise. Actions belong on detail screens. Exception: job rows where the action IS the row's purpose.",
+      "Don't make static content look tappable. Labels, badges, and metadata that don't respond to touch carry zero tap affordance: no chevrons, no tint, no underline.",
+      "Don't use looping or repeating animations. Attention animations fire once on state change, then stop."
+    ]
+  }
+}

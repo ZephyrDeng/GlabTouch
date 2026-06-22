@@ -14,14 +14,14 @@ struct MergeRequestDetailView: View {
     var body: some View {
         List {
             Section("Overview") {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text(mergeRequest.title)
-                        .font(.headline)
+                        .font(AppFont.title)
 
                     if let description = mergeRequest.description, !description.isEmpty {
                         Text(description)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(AppFont.body)
+                            .foregroundStyle(TextColor.secondary)
                     }
 
                     Label(mergeRequest.author.name, systemImage: "person")
@@ -31,7 +31,7 @@ struct MergeRequestDetailView: View {
 
                 if mergeRequest.approved {
                     Label("Approved", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(TextColor.approved)
                 }
 
                 if let webURL = mergeRequest.webURL {
@@ -58,11 +58,11 @@ struct MergeRequestDetailView: View {
                             Text(stat.path)
                             Spacer()
                             Text("+\(stat.additions)")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(DiffColor.additionForeground)
                             Text("-\(stat.deletions)")
-                                .foregroundStyle(.red)
+                                .foregroundStyle(DiffColor.deletionForeground)
                         }
-                        .font(.subheadline)
+                        .font(AppFont.body)
                     }
                 }
             }
@@ -88,10 +88,7 @@ struct MergeRequestDetailView: View {
             }
 
             if let error = viewModel.error {
-                Section("Error") {
-                    Text(error.localizedDescription)
-                        .foregroundStyle(.red)
-                }
+                ErrorSection(message: error.localizedDescription)
             }
         }
         .navigationTitle("Merge Request")
@@ -142,17 +139,17 @@ struct DiffFileRowView: View {
     let file: DiffFile
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spacing.md) {
             Image(systemName: iconName)
                 .foregroundStyle(iconColor)
                 .frame(width: 20)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(file.displayPath)
-                    .font(.subheadline)
+                    .font(AppFont.body)
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(AppFont.metadata)
+                    .foregroundStyle(TextColor.secondary)
             }
         }
     }
@@ -165,9 +162,9 @@ struct DiffFileRowView: View {
     }
 
     private var iconColor: Color {
-        if file.deletedFile { return .red }
-        if file.newFile { return .green }
-        return .secondary
+        if file.deletedFile { return DiffColor.deletionForeground }
+        if file.newFile { return DiffColor.additionForeground }
+        return TextColor.secondary
     }
 
     private var subtitle: String {
@@ -188,7 +185,7 @@ struct DiffFileView: View {
                     DiffLineView(line: line)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, Spacing.sm)
         }
         .navigationTitle(file.displayPath)
         .navigationBarTitleDisplayMode(.inline)
@@ -199,7 +196,7 @@ struct DiffLineView: View {
     let line: DiffLine
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
             Text(prefix)
                 .foregroundStyle(line.kind.foregroundStyle)
                 .frame(width: 16, alignment: .center)
@@ -208,8 +205,8 @@ struct DiffLineView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.system(.caption, design: .monospaced))
-        .padding(.horizontal, 12)
+        .font(AppFont.mono)
+        .padding(.horizontal, Spacing.md)
         .padding(.vertical, 3)
         .background(line.kind.backgroundStyle)
     }
@@ -228,21 +225,21 @@ struct DiffLineView: View {
 private extension DiffLine.Kind {
     var foregroundStyle: Color {
         switch self {
-        case .addition: .green
-        case .deletion: .red
-        case .hunk: .blue
-        case .metadata: .secondary
-        case .context: .primary
+        case .addition: DiffColor.additionForeground
+        case .deletion: DiffColor.deletionForeground
+        case .hunk: DiffColor.hunkForeground
+        case .metadata: DiffColor.metadataForeground
+        case .context: DiffColor.contextForeground
         }
     }
 
     var backgroundStyle: Color {
         switch self {
-        case .addition: Color.green.opacity(0.12)
-        case .deletion: Color.red.opacity(0.12)
-        case .hunk: Color.blue.opacity(0.10)
-        case .metadata: Color.secondary.opacity(0.08)
-        case .context: Color.clear
+        case .addition: DiffColor.additionBackground
+        case .deletion: DiffColor.deletionBackground
+        case .hunk: DiffColor.hunkBackground
+        case .metadata: DiffColor.metadataBackground
+        case .context: DiffColor.contextBackground
         }
     }
 }

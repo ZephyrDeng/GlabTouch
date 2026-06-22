@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let stageDisclosureAnimation = Animation.timingCurve(0.22, 1.0, 0.36, 1.0, duration: 0.22)
+// Animation tokens centralized in DesignSystem/AppAnimation.swift
 
 struct PipelineDetailView: View {
     @Environment(AuthService.self) private var authService
@@ -70,17 +70,14 @@ struct PipelineDetailView: View {
             }
 
             if let error = viewModel.error {
-                Section("Error") {
-                    Text(error.localizedDescription)
-                        .foregroundStyle(.red)
-                }
+                ErrorSection(message: error.localizedDescription)
             }
         }
         .navigationTitle("Pipeline")
         .refreshable {
             await loadJobs()
         }
-        .safeAreaPadding(.bottom, 12)
+        .safeAreaPadding(.bottom, Spacing.md)
         .task {
             await loadJobs()
         }
@@ -122,7 +119,7 @@ struct PipelineDetailView: View {
     }
 
     private func toggleStage(_ group: PipelineStageGroup) {
-        withAnimation(reduceMotion ? nil : stageDisclosureAnimation) {
+        AppAnimation.withMotion(reduceMotion: reduceMotion) {
             if expandedStageIDs.contains(group.id) {
                 expandedStageIDs.remove(group.id)
             } else {
@@ -150,11 +147,11 @@ private struct PipelineStageDisclosureRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: toggle) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text(group.stage)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .font(AppFont.body.weight(.semibold))
+                            .foregroundStyle(TextColor.primary)
                             .lineLimit(1)
 
                         Label {
@@ -162,23 +159,23 @@ private struct PipelineStageDisclosureRow: View {
                         } icon: {
                             Image(systemName: "hammer")
                         }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(AppFont.metadata)
+                        .foregroundStyle(TextColor.secondary)
                     }
 
-                    Spacer(minLength: 12)
+                    Spacer(minLength: Spacing.md)
 
                     PipelineStatusBadge(status: group.status)
                         .frame(minWidth: 64, alignment: .trailing)
 
                     Image(systemName: "chevron.down")
                         .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(TextColor.secondary)
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
                         .frame(width: 24, height: 24)
                 }
                 .contentShape(Rectangle())
-                .padding(.vertical, 6)
+                .padding(.vertical, Spacing.sm)
             }
             .buttonStyle(.plain)
             .accessibilityValue(Text(isExpanded ? "Expanded" : "Collapsed"))
@@ -198,11 +195,11 @@ private struct PipelineStageDisclosureRow: View {
                         }
                     }
                 }
-                .padding(.top, 6)
-                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+                .padding(.top, Spacing.sm)
+                .transition(AppAnimation.contentReveal(reduceMotion: reduceMotion))
             }
         }
-        .animation(reduceMotion ? nil : stageDisclosureAnimation, value: isExpanded)
+        .animation(reduceMotion ? nil : AppAnimation.stageDisclosure, value: isExpanded)
     }
 }
 
@@ -213,12 +210,12 @@ private struct PipelineJobRowView: View {
     let performAction: (PipelineJobAction, PipelineJob, Int) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(job.name)
-                        .font(.subheadline)
-                    HStack(spacing: 8) {
+                        .font(AppFont.body)
+                    HStack(spacing: Spacing.sm) {
                         if let durationText = job.durationText {
                             Label(durationText, systemImage: "timer")
                         }
@@ -226,8 +223,8 @@ private struct PipelineJobRowView: View {
                             Label("Allowed to Fail", systemImage: "shield")
                         }
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(AppFont.metadata)
+                    .foregroundStyle(TextColor.secondary)
                 }
 
                 Spacer()
@@ -253,9 +250,9 @@ private struct PipelineJobRowView: View {
                     .disabled(isMutating)
                 }
             }
-            .font(.caption)
+            .font(AppFont.metadata)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, Spacing.sm)
     }
 }
 
@@ -287,7 +284,7 @@ struct PipelineJobTraceView: View {
                 .padding()
             } else {
                 Text(viewModel.trace)
-                    .font(.system(.caption, design: .monospaced))
+                    .font(AppFont.mono)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
@@ -301,7 +298,7 @@ struct PipelineJobTraceView: View {
         .refreshable {
             await loadTrace()
         }
-        .safeAreaPadding(.bottom, 12)
+        .safeAreaPadding(.bottom, Spacing.md)
     }
 
     private func loadTrace() async {

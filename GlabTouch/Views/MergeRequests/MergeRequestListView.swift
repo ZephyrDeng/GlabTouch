@@ -14,7 +14,7 @@ struct MergeRequestListView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.vertical, Spacing.sm)
 
                 List {
                     if viewModel.mergeRequests.isEmpty && !viewModel.isLoading {

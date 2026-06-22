@@ -47,8 +47,8 @@ struct LoginView: View {
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
-                            .foregroundStyle(.red)
-                            .font(.caption)
+                            .foregroundStyle(TextColor.error)
+                            .font(AppFont.metadata)
                     }
                 }
 

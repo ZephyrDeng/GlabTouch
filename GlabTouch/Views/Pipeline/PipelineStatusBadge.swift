@@ -5,7 +5,7 @@ struct PipelineStatusBadge: View {
 
     var body: some View {
         Label(status.displayName, systemImage: status.iconName)
-            .font(.caption)
+            .font(AppFont.metadata)
             .foregroundStyle(status.color)
     }
 }
@@ -46,14 +46,14 @@ extension Pipeline.Status {
 
     var color: Color {
         switch self {
-        case .success: .green
-        case .failed: .red
-        case .running: .blue
-        case .pending, .waiting, .preparing, .created, .waitingForCallback, .waitingForResource: .orange
-        case .canceled, .skipped: .gray
-        case .manual: .purple
-        case .scheduled: .teal
-        case .canceling: .orange
+        case .success: StatusColor.success
+        case .failed: StatusColor.failed
+        case .running: StatusColor.running
+        case .pending, .waiting, .preparing, .created, .waitingForCallback, .waitingForResource: StatusColor.pending
+        case .canceled, .skipped: StatusColor.canceled
+        case .manual: StatusColor.manual
+        case .scheduled: StatusColor.scheduled
+        case .canceling: StatusColor.pending
         }
     }
 }

@@ -22,17 +22,17 @@ struct SettingsView: View {
                             try? authService.switchInstance(instance)
                         } label: {
                             HStack {
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: Spacing.xs) {
                                     Text(instance.name)
                                     Text(instance.baseURL.absoluteString)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .font(AppFont.metadata)
+                                        .foregroundStyle(TextColor.secondary)
                                 }
                                 Spacer()
                                 if authService.currentInstance?.id == instance.id {
                                     Label("Active", systemImage: "checkmark.circle.fill")
                                         .labelStyle(.iconOnly)
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(TextColor.approved)
                                 }
                             }
                         }
@@ -50,7 +50,7 @@ struct SettingsView: View {
                     }
                     if let registrationError = notificationService.registrationError {
                         Text(registrationError)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(TextColor.error)
                     }
                     Button("Enable Push Notifications") {
                         Task {
@@ -71,7 +71,7 @@ struct SettingsView: View {
 
                     if let lastError = localPollingService.lastError {
                         Text(lastError)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(TextColor.error)
                     }
 
                     Button {

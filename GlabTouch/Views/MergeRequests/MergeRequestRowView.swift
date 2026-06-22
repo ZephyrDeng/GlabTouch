@@ -4,31 +4,31 @@ struct MergeRequestRowView: View {
     let mergeRequest: MergeRequest
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             Text(mergeRequest.title)
-                .font(.headline)
+                .font(AppFont.title)
                 .lineLimit(2)
 
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.md) {
                 Label(mergeRequest.author.name, systemImage: "person")
                 Label("!\(mergeRequest.iid)", systemImage: "number")
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(AppFont.metadata)
+            .foregroundStyle(TextColor.secondary)
 
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.sm) {
                 Label(mergeRequest.sourceBranch, systemImage: "arrow.branch")
                 Image(systemName: "arrow.right")
                 Text(mergeRequest.targetBranch)
             }
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
+            .font(AppFont.tertiary)
+            .foregroundStyle(TextColor.tertiary)
 
             HStack {
                 if mergeRequest.approved {
                     Label("Approved", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
+                        .foregroundStyle(TextColor.approved)
+                        .font(AppFont.metadata)
                 }
 
                 if let pipeline = mergeRequest.headPipeline {
@@ -36,6 +36,6 @@ struct MergeRequestRowView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 }

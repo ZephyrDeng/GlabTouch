@@ -24,10 +24,7 @@ struct PipelineListView: View {
                 }
 
                 if let error = viewModel.error {
-                    Section("Error") {
-                        Text(error.localizedDescription)
-                            .foregroundStyle(.red)
-                    }
+                    ErrorSection(message: error.localizedDescription)
                 }
             }
             .navigationTitle("Pipelines")
@@ -58,24 +55,24 @@ struct PipelineRowView: View {
     var showsJobs = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack {
                 PipelineStatusBadge(status: pipeline.status)
                 Spacer()
                 if let shortSHA = pipeline.shortSHA {
                     Text(shortSHA)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .font(AppFont.mono)
+                        .foregroundStyle(TextColor.secondary)
                 }
             }
 
             if let title = pipeline.mergeRequestTitle {
                 Text(title)
-                    .font(.subheadline)
+                    .font(AppFont.body)
                     .lineLimit(2)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.sm) {
                 if let ref = pipeline.ref {
                     Label(ref, systemImage: "arrow.branch")
                 }
@@ -86,8 +83,8 @@ struct PipelineRowView: View {
                     Text(projectFullPath)
                 }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(AppFont.metadata)
+            .foregroundStyle(TextColor.secondary)
 
             if !pipeline.stages.isEmpty {
                 if showsJobs {
@@ -99,7 +96,7 @@ struct PipelineRowView: View {
                                     Spacer()
                                     PipelineStatusBadge(status: job.status)
                                 }
-                                .font(.caption)
+                                .font(AppFont.metadata)
                             }
                         } label: {
                             HStack {
@@ -110,7 +107,7 @@ struct PipelineRowView: View {
                         }
                     }
                 } else {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Spacing.xs) {
                         ForEach(pipeline.stages) { stage in
                             PipelineStatusBadge(status: stage.status)
                         }
@@ -118,7 +115,7 @@ struct PipelineRowView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Spacing.xs)
     }
 }
 
