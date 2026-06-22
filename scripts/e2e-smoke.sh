@@ -20,6 +20,7 @@ APP_PATH="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/GlabTouch.app"
 xcrun simctl bootstatus booted -b
 xcrun simctl install booted "$APP_PATH"
 xcrun simctl launch booted "$BUNDLE_ID"
+sleep "${SMOKE_SCREENSHOT_DELAY:-3}"
 xcrun simctl io booted screenshot "$ROOT_DIR/build/e2e-login.png"
 
 echo "E2E smoke passed: $ROOT_DIR/build/e2e-login.png"

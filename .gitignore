@@ -41,3 +41,7 @@ fastlane/test_output
 # IDE
 .idea/
 *.hmap
+
+# Local Codex/agent workflows
+.agents/
+.claude/
