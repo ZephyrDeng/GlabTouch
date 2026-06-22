@@ -5,6 +5,7 @@ struct ModelBehaviorTests {
     static func main() throws {
         try testNormalizesGitLabBaseURL()
         try testUpsertsAndRemovesGitLabInstances()
+        try testDecodesMergeRequestDescriptionHTML()
         try testDecodesPipelinesAcrossMergeRequestBuckets()
         try testCountsActionablePipelinesForLocalBadge()
         try testDecodesPipelineIdentifiersForInteraction()
@@ -13,6 +14,7 @@ struct ModelBehaviorTests {
         try testDetectsPipelineStartAndCompletionNotifications()
         try testDecodesPipelineNotificationPayload()
         try testParsesUnifiedDiffLines()
+        try testBuildsMarkdownHTMLDocumentAndAuthenticatesInstanceImages()
         print("ModelBehaviorTests passed")
     }
 
@@ -51,6 +53,45 @@ struct ModelBehaviorTests {
         assertEqual(updated.count, 2, "upsert should add new instances")
         assertEqual(updated.first?.name, "GitLab Main", "upsert should update matching instance IDs")
         assertEqual(removed.map(\.id), [second.id], "remove should delete the selected instance")
+    }
+
+    private static func testDecodesMergeRequestDescriptionHTML() throws {
+        let json = """
+        {
+          "currentUser": {
+            "assignedMergeRequests": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/MergeRequest/1",
+                  "iid": "10",
+                  "title": "Markdown MR",
+                  "description": "**Ready**",
+                  "descriptionHtml": "<p><strong>Ready</strong></p>",
+                  "sourceBranch": "feature/markdown",
+                  "targetBranch": "main",
+                  "state": "opened",
+                  "approved": false,
+                  "webUrl": "https://gitlab.example.com/project/-/merge_requests/10",
+                  "project": { "id": "gid://gitlab/Project/123", "fullPath": "group/project" },
+                  "author": { "id": "gid://gitlab/User/1", "username": "alice", "name": "Alice", "avatarUrl": null },
+                  "reviewers": { "nodes": [] },
+                  "diffStats": null,
+                  "headPipeline": null
+                }
+              ]
+            },
+            "authoredMergeRequests": { "nodes": [] },
+            "reviewRequestedMergeRequests": { "nodes": [] }
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(CurrentUserResponse.self, from: json)
+        let node = try unwrap(response.currentUser.allMergeRequests.first, "MR node should decode")
+        let mergeRequest = node.toMergeRequest()
+
+        assertEqual(node.descriptionHtml, "<p><strong>Ready</strong></p>", "GraphQL node should decode rendered description HTML")
+        assertEqual(mergeRequest.descriptionHtml, "<p><strong>Ready</strong></p>", "MergeRequest should carry rendered description HTML")
     }
 
     private static func testDecodesPipelinesAcrossMergeRequestBuckets() throws {
@@ -305,9 +346,31 @@ struct ModelBehaviorTests {
         assertEqual(lines[3].content, "new line", "addition should strip marker")
     }
 
+    private static func testBuildsMarkdownHTMLDocumentAndAuthenticatesInstanceImages() throws {
+        let document = MarkdownHTMLDocument.render(
+            html: """
+            <p>See <img src="/uploads/diagram.png"><img src="https://gitlab.example.com/group/project/uploads/inline.png?inline=false"><img src="https://cdn.example.com/logo.png"></p>
+            """,
+            baseURL: URL(string: "https://gitlab.example.com"),
+            authToken: "secret-token",
+            stylesheet: "body { margin: 0; }"
+        )
+
+        assertContains(document, "<style>body { margin: 0; }</style>", "HTML document should inline the markdown stylesheet")
+        assertContains(document, "src=\"https://gitlab.example.com/uploads/diagram.png?private_token=secret-token\"", "relative instance images should receive a private token")
+        assertContains(document, "src=\"https://gitlab.example.com/group/project/uploads/inline.png?inline=false&amp;private_token=secret-token\"", "absolute instance images should preserve query items")
+        assertContains(document, "src=\"https://cdn.example.com/logo.png\"", "external images should remain unchanged")
+    }
+
     private static func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
         if actual != expected {
             fatalError("\\(message): expected \\(expected), got \\(actual)")
+        }
+    }
+
+    private static func assertContains(_ haystack: String, _ needle: String, _ message: String) {
+        if !haystack.contains(needle) {
+            fatalError("\\(message): expected to find \\(needle) in \\(haystack)")
         }
     }
 

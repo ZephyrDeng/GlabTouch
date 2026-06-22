@@ -6,6 +6,7 @@ struct MergeRequest: Identifiable, Hashable {
     let projectID: Int
     let title: String
     let description: String?
+    let descriptionHtml: String?
     let author: User
     let sourceBranch: String
     let targetBranch: String
@@ -27,6 +28,7 @@ struct MergeRequest: Identifiable, Hashable {
             projectID: projectID,
             title: title,
             description: description,
+            descriptionHtml: descriptionHtml,
             author: author,
             sourceBranch: sourceBranch,
             targetBranch: targetBranch,

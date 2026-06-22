@@ -37,6 +37,7 @@ struct MRNode: Decodable {
     let iid: String
     let title: String
     let description: String?
+    let descriptionHtml: String?
     let sourceBranch: String
     let targetBranch: String
     let state: String
@@ -58,6 +59,7 @@ struct MRNode: Decodable {
             projectID: extractProjectID(from: project.id),
             title: title,
             description: description,
+            descriptionHtml: descriptionHtml,
             author: author.toUser(),
             sourceBranch: sourceBranch,
             targetBranch: targetBranch,

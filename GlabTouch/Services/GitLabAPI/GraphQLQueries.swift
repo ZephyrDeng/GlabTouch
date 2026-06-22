@@ -50,6 +50,7 @@ enum GraphQLQueries {
     iid
     title
     description
+    descriptionHtml
     sourceBranch
     targetBranch
     state

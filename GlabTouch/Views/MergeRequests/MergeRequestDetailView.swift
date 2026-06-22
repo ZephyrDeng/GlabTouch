@@ -6,6 +6,7 @@ struct MergeRequestDetailView: View {
 
     @State private var mergeRequest: MergeRequest
     @State private var viewModel = MergeRequestDetailViewModel()
+    @State private var webViewHeight: CGFloat = 0
 
     init(mergeRequest: MergeRequest) {
         _mergeRequest = State(initialValue: mergeRequest)
@@ -18,7 +19,17 @@ struct MergeRequestDetailView: View {
                     Text(mergeRequest.title)
                         .font(AppFont.title)
 
-                    if let description = mergeRequest.description, !description.isEmpty {
+                    if let descriptionHtml = mergeRequest.descriptionHtml?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !descriptionHtml.isEmpty
+                    {
+                        MarkdownWebView(
+                            html: descriptionHtml,
+                            baseURL: authService.baseURL,
+                            authToken: authService.accessToken ?? "",
+                            contentHeight: $webViewHeight
+                        )
+                        .frame(height: max(webViewHeight, 1))
+                    } else if let description = mergeRequest.description, !description.isEmpty {
                         Text(description)
                             .font(AppFont.body)
                             .foregroundStyle(TextColor.secondary)
