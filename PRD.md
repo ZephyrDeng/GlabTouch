@@ -33,7 +33,12 @@ Developers and engineering leads using GitLab self-hosted (CE/EE) who need to re
 - No inline comments (v1.1+)
 
 #### Pipeline Status
+- Pipeline tab views: MR-related pipelines / my triggered pipelines
 - View pipeline status associated with MR
+- View pipelines triggered by the signed-in user within the review workspace project scope
+- My triggered pipelines fetch the latest 50 pipelines per review workspace project and merge them by updated time descending
+- My triggered pipelines show successful project results when some project requests fail, with an aggregated error at the bottom
+- My triggered pipelines show an error empty state when all project requests fail
 - Pipeline detail with stage/job breakdown and job trace viewing
 - Pipeline and job actions: retry, cancel, and manual play where GitLab allows them
 - Stage/job breakdown with status indicators (success/failed/running/pending)
@@ -42,9 +47,21 @@ Developers and engineering leads using GitLab self-hosted (CE/EE) who need to re
 #### Push Notifications
 - APNs client-side registration and handling
 - Standardized notification payload schema
-- Pipeline started and completed notifications
+- Configurable local polling with badge updates
+- Default polling interval is 15 minutes, configurable from 1 to 60 minutes
+- Foreground polling follows the configured interval and manual refresh
+- Background polling follows iOS Background App Refresh scheduling
+- Settings show last refresh time and last polling error
+- Pipeline started, failed, and completed successfully notifications
+- First polling refresh establishes the baseline and does not send notifications
+- Later notifications are sent only for notifiable transitions since the established baseline
+- Notification titles are separated as Pipeline Started, Pipeline Failed, and Pipeline Passed
+- Duplicate pipeline notifications merge by project and pipeline ID
+- My triggered pipeline ownership takes precedence over MR-related ownership when the same pipeline appears in both views
+- Tapping a pipeline notification opens `PipelineDetailView`
+- Notification routing data includes instance URL, project ID, pipeline ID, source ownership, pipeline snapshot, and optional merge request context
+- `PipelineDetailView` renders the notification snapshot immediately, then refreshes the latest pipeline status and jobs using project ID and pipeline ID
 - Reference webhook relay implementation (user self-deploys)
-- Fallback: configurable local polling with badge updates
 
 ### Explicitly Out of Scope (v1.1+)
 - MR comments / inline review comments
@@ -120,6 +137,7 @@ POST /projects/:id/merge_requests/:iid/unapprove
 GET  /projects/:id/merge_requests/:iid/approvals
 GET  /projects/:id/merge_requests/:iid/changes   # full diff content
 GET  /projects/:id/pipelines/:pipeline_id/jobs
+GET  /projects/:id/pipelines?username=:username&per_page=50
 GET  /projects/:id/jobs/:job_id/trace
 POST /projects/:id/pipelines/:pipeline_id/retry
 POST /projects/:id/pipelines/:pipeline_id/cancel
@@ -261,6 +279,40 @@ GlabTouch/
 └── DesignSystem/
     └── ANSIColorPalette.swift                # NEW: light/dark ANSI color maps
 ```
+
+## v1.3 Scope — My Triggered Pipelines & Local Notifications
+
+### Implementation Slices
+
+1. **Data model and API**
+   - Extend `Pipeline` with source ownership, updated time, user, source, and notification snapshot fields.
+   - Add REST support for `GET /projects/:id/pipelines?username=:username&per_page=50`.
+   - Build review workspace project discovery from MR-related pipeline data.
+
+2. **Pipeline tab UI**
+   - Add segmented tabs for MR-related pipelines and my triggered pipelines.
+   - Keep MR-related pipelines backed by the existing GraphQL dashboard query.
+   - Show my triggered pipelines merged by updated time descending.
+   - Show partial project failures as a bottom aggregated error and all-project failures as an error empty state.
+
+3. **Local polling notification rules**
+   - Poll both pipeline views using the configured interval.
+   - Establish the first refresh as the baseline without notifications.
+   - Send notifications only for started, failed, and passed transitions.
+   - Deduplicate by `projectID:pipelineID`, with my triggered pipeline ownership taking precedence.
+
+4. **Notification routing**
+   - Include instance URL, project ID, pipeline ID, source ownership, pipeline snapshot, and optional MR context in notification routing data.
+   - Open `PipelineDetailView` from pipeline notification taps.
+   - Render the notification snapshot immediately, then refresh latest pipeline status and jobs.
+
+### Acceptance Criteria
+
+- Model and parsing tests cover my triggered pipeline REST decoding, source ownership, updated time sorting, notification snapshot construction, and review workspace project discovery.
+- Pipeline notification tests cover baseline establishment, started transitions, failed transitions, passed transitions, and duplicate merge by `projectID:pipelineID`.
+- Duplicate notification tests verify my triggered pipeline ownership takes precedence over MR-related pipeline ownership.
+- Pipeline tab UI verification covers MR-related pipelines, my triggered pipelines, partial project failure aggregation, and all-project failure empty state.
+- Notification routing verification covers opening `PipelineDetailView` from routing data, immediate snapshot rendering, and latest status/jobs refresh.
 
 ## Git Configuration
 
