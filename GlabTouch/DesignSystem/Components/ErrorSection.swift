@@ -5,9 +5,17 @@ struct ErrorSection: View {
 
     var body: some View {
         Section {
-            Text(message)
-                .foregroundStyle(TextColor.error)
-                .font(AppFont.metadata)
+            ErrorText(message: message)
         }
+    }
+}
+
+struct ErrorText: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .foregroundStyle(TextColor.error)
+            .font(AppFont.metadata)
     }
 }

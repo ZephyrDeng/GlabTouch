@@ -56,8 +56,7 @@ struct SettingsView: View {
                         LabeledContent("APNs Token", value: String(deviceToken.prefix(12)) + "...")
                     }
                     if let registrationError = notificationService.registrationError {
-                        Text(registrationError)
-                            .foregroundStyle(TextColor.error)
+                        ErrorText(message: registrationError)
                     }
                     Button("Enable Push Notifications") {
                         Task {
@@ -78,8 +77,7 @@ struct SettingsView: View {
                     LabeledContent("Last Refresh", value: lastRefreshText)
 
                     if let lastError = localPollingService.lastError {
-                        Text(lastError)
-                            .foregroundStyle(TextColor.error)
+                        ErrorText(message: lastError)
                     }
 
                     Button {

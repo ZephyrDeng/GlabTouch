@@ -45,11 +45,7 @@ struct LoginView: View {
                 }
 
                 if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundStyle(TextColor.error)
-                            .font(AppFont.metadata)
-                    }
+                    ErrorSection(message: errorMessage)
                 }
 
                 Section {
