@@ -3,6 +3,9 @@ import Foundation
 @MainActor
 @Observable
 final class GitLabAPIClient {
+    private static weak var authService: AuthService?
+    private static let tokenRefresher = TokenRefresher()
+
     private let session = URLSession.shared
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -27,6 +30,16 @@ final class GitLabAPIClient {
         self.authMethod = authMethod
     }
 
+    static func configure(authService: AuthService) {
+        self.authService = authService
+    }
+
+    static func registerInstanceForTokenRefresh(_ instance: GitLabInstance) {
+        Task {
+            await tokenRefresher.register(instanceID: instance.id, instanceURL: instance.baseURL)
+        }
+    }
+
     func updateCredentials(baseURL: URL, token: String, authMethod: GitLabInstance.AuthMethod = .pat) {
         self.baseURL = baseURL
         self.token = token
@@ -46,8 +59,7 @@ final class GitLabAPIClient {
         if let variables { body["variables"] = variables }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
+        let data = try await data(for: request)
         let wrapper = try decoder.decode(GraphQLResponse<T>.self, from: data)
 
         if let errors = wrapper.errors, !errors.isEmpty {
@@ -71,8 +83,7 @@ final class GitLabAPIClient {
             request.httpBody = try JSONEncoder().encode(body)
         }
 
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
+        let data = try await data(for: request)
         return try decoder.decode(T.self, from: data)
     }
 
@@ -81,8 +92,7 @@ final class GitLabAPIClient {
         request.httpMethod = method
         applyAuthorization(to: &request)
 
-        let (_, response) = try await session.data(for: request)
-        try validateResponse(response)
+        _ = try await data(for: request)
     }
 
     func mergeRequestChanges(projectID: Int, mrIID: Int) async throws -> [DiffFile] {
@@ -134,8 +144,7 @@ final class GitLabAPIClient {
         request.httpMethod = "GET"
         applyAuthorization(to: &request)
 
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
+        let data = try await data(for: request)
         return String(data: data, encoding: .utf8) ?? ""
     }
 
@@ -157,6 +166,55 @@ final class GitLabAPIClient {
         case .oauth:
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+    }
+
+    private func data(for request: URLRequest, allowsRefresh: Bool = true) async throws -> Data {
+        let (data, response) = try await session.data(for: request)
+        if isAuthenticationRequired(response) {
+            guard allowsRefresh, await refreshTokenAfterAuthenticationFailure() else {
+                Self.authService?.markNeedsReauthentication()
+                throw GitLabAPIError.authenticationRequired
+            }
+
+            var retryRequest = request
+            applyAuthorization(to: &retryRequest)
+            return try await self.data(for: retryRequest, allowsRefresh: false)
+        }
+
+        try validateResponse(response)
+        return data
+    }
+
+    private func refreshTokenAfterAuthenticationFailure() async -> Bool {
+        guard let authService = Self.authService,
+              let instance = authService.currentInstance,
+              let clientID = instance.oauthClientID
+        else { return false }
+
+        await Self.tokenRefresher.register(instanceID: instance.id, instanceURL: instance.baseURL)
+        let result = await Self.tokenRefresher.refreshIfNeeded(
+            instanceURL: instance.baseURL,
+            currentToken: token,
+            refreshToken: authService.refreshToken,
+            tokenType: authService.tokenType
+        ) { refreshToken, instanceURL in
+            try await OAuthPKCE.refreshToken(refreshToken: refreshToken, instanceURL: instanceURL, clientID: clientID)
+        }
+
+        switch result {
+        case .refreshed(let newToken):
+            token = newToken
+            try? authService.reloadCurrentCredentials()
+            return true
+        case .needsReauth:
+            authService.markNeedsReauthentication()
+            return false
+        }
+    }
+
+    private func isAuthenticationRequired(_ response: URLResponse) -> Bool {
+        guard let http = response as? HTTPURLResponse else { return false }
+        return http.statusCode == 401
     }
 
     private func validateResponse(_ response: URLResponse) throws {
@@ -205,6 +263,7 @@ enum GitLabAPIError: LocalizedError {
     case httpError(Int)
     case graphQLErrors([String])
     case emptyResponse
+    case authenticationRequired
 
     var errorDescription: String? {
         switch self {
@@ -212,6 +271,7 @@ enum GitLabAPIError: LocalizedError {
         case .httpError(let code): "HTTP error \(code)"
         case .graphQLErrors(let msgs): msgs.joined(separator: "; ")
         case .emptyResponse: "Empty response from server"
+        case .authenticationRequired: "Authentication required"
         }
     }
 }

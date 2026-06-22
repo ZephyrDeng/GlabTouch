@@ -8,6 +8,11 @@ final class AuthService {
     private(set) var currentInstance: GitLabInstance?
     private(set) var savedInstances: [GitLabInstance] = []
     private(set) var isAuthenticated = false
+    private(set) var refreshToken: String?
+    private(set) var tokenType = GitLabInstance.AuthMethod.pat.rawValue
+    var needsReauthentication = false
+    var needsRefreshTokenWarning = false
+
     private let keychain = KeychainService()
 
     private var token: String?
@@ -16,13 +21,24 @@ final class AuthService {
 
     var accessToken: String? { token }
 
+    init() {
+        GitLabAPIClient.configure(authService: self)
+    }
+
     func loginWithPAT(instance: GitLabInstance, token: String) async throws {
         var mutableInstance = instance
         mutableInstance.authMethod = .pat
 
-        try keychain.saveString(token, for: tokenKey(for: mutableInstance))
-        try activateInstance(mutableInstance, token: token)
-
+        try keychain.saveAccessToken(token, for: mutableInstance)
+        try keychain.saveRefreshToken(nil, for: mutableInstance)
+        try keychain.saveTokenType(GitLabInstance.AuthMethod.pat.rawValue, for: mutableInstance)
+        try activateInstance(
+            mutableInstance,
+            token: token,
+            refreshToken: nil,
+            tokenType: GitLabInstance.AuthMethod.pat.rawValue
+        )
+        needsRefreshTokenWarning = false
     }
 
     func loginWithOAuth(instance: GitLabInstance, clientID: String, redirectURI: URL) async throws {
@@ -50,35 +66,52 @@ final class AuthService {
             throw OAuthError.authorizationCodeMissing
         }
 
-        let tokenResponse = try await exchangeAuthorizationCode(
-            instance: mutableInstance,
+        let tokenResponse = try await OAuthPKCE.exchangeAuthorizationCode(
+            instanceURL: mutableInstance.baseURL,
             clientID: clientID,
             redirectURI: redirectURI,
             code: code,
-            verifier: verifier
+            codeVerifier: verifier
         )
 
-        try keychain.saveString(tokenResponse.accessToken, for: tokenKey(for: mutableInstance))
-        try activateInstance(mutableInstance, token: tokenResponse.accessToken)
+        try keychain.saveAccessToken(tokenResponse.accessToken, for: mutableInstance)
+        try keychain.saveRefreshToken(tokenResponse.refreshToken, for: mutableInstance)
+        try keychain.saveTokenType(GitLabInstance.AuthMethod.oauth.rawValue, for: mutableInstance)
+        try activateInstance(
+            mutableInstance,
+            token: tokenResponse.accessToken,
+            refreshToken: tokenResponse.refreshToken,
+            tokenType: GitLabInstance.AuthMethod.oauth.rawValue
+        )
+        needsRefreshTokenWarning = tokenResponse.refreshToken == nil
     }
 
     func switchInstance(_ instance: GitLabInstance) throws {
-        guard let storedToken = try keychain.loadString(for: tokenKey(for: instance)) else {
+        guard let storedToken = try keychain.loadAccessToken(for: instance) else {
             throw AuthSessionError.missingStoredToken
         }
 
-        try activateInstance(instance, token: storedToken)
+        try activateInstance(
+            instance,
+            token: storedToken,
+            refreshToken: try keychain.loadRefreshToken(for: instance),
+            tokenType: try keychain.loadTokenType(for: instance) ?? instance.authMethod.rawValue
+        )
     }
 
     func forgetInstance(_ instance: GitLabInstance) throws {
-        try keychain.delete(for: tokenKey(for: instance))
+        try keychain.deleteCredentials(for: instance)
         savedInstances = GitLabInstanceList.remove(instance, from: savedInstances)
         try saveInstances(savedInstances)
 
         if currentInstance?.id == instance.id {
             token = nil
+            refreshToken = nil
+            tokenType = GitLabInstance.AuthMethod.pat.rawValue
             currentInstance = nil
             isAuthenticated = false
+            needsReauthentication = false
+            needsRefreshTokenWarning = false
             UserDefaults.standard.removeObject(forKey: StorageKey.currentInstance)
         }
     }
@@ -93,7 +126,7 @@ final class AuthService {
 
         guard let data = UserDefaults.standard.data(forKey: "currentInstance"),
               let instance = try? JSONDecoder().decode(GitLabInstance.self, from: data),
-              let storedToken = try? keychain.loadString(for: tokenKey(for: instance))
+              let storedToken = try? keychain.loadAccessToken(for: instance)
         else { return }
 
         savedInstances = GitLabInstanceList.upsert(instance, in: savedInstances)
@@ -101,14 +134,34 @@ final class AuthService {
 
         self.currentInstance = instance
         self.token = storedToken
+        self.refreshToken = try? keychain.loadRefreshToken(for: instance)
+        self.tokenType = (try? keychain.loadTokenType(for: instance)) ?? instance.authMethod.rawValue
         self.isAuthenticated = true
+        self.needsReauthentication = false
+        self.needsRefreshTokenWarning = instance.authMethod == .oauth && refreshToken == nil
+        GitLabAPIClient.registerInstanceForTokenRefresh(instance)
     }
 
-    private func tokenKey(for instance: GitLabInstance) -> String {
-        "token_\(instance.id.uuidString)"
+    func markNeedsReauthentication() {
+        needsReauthentication = true
     }
 
-    private func activateInstance(_ instance: GitLabInstance, token: String) throws {
+    func clearNeedsReauthentication() {
+        needsReauthentication = false
+    }
+
+    func reloadCurrentCredentials() throws {
+        guard let instance = currentInstance else { return }
+        guard let storedToken = try keychain.loadAccessToken(for: instance) else {
+            throw AuthSessionError.missingStoredToken
+        }
+
+        token = storedToken
+        refreshToken = try keychain.loadRefreshToken(for: instance)
+        tokenType = try keychain.loadTokenType(for: instance) ?? instance.authMethod.rawValue
+    }
+
+    private func activateInstance(_ instance: GitLabInstance, token: String, refreshToken: String?, tokenType: String) throws {
         savedInstances = GitLabInstanceList.upsert(instance, in: savedInstances)
         try saveInstances(savedInstances)
 
@@ -116,8 +169,12 @@ final class AuthService {
         UserDefaults.standard.set(data, forKey: StorageKey.currentInstance)
 
         self.token = token
+        self.refreshToken = refreshToken
+        self.tokenType = tokenType
         self.currentInstance = instance
         self.isAuthenticated = true
+        self.needsReauthentication = false
+        GitLabAPIClient.registerInstanceForTokenRefresh(instance)
     }
 
     private func saveInstances(_ instances: [GitLabInstance]) throws {
@@ -183,45 +240,6 @@ final class AuthService {
         }
     }
 
-    private func exchangeAuthorizationCode(
-        instance: GitLabInstance,
-        clientID: String,
-        redirectURI: URL,
-        code: String,
-        verifier: String
-    ) async throws -> OAuthTokenResponse {
-        let tokenURL = instance.baseURL.appendingPathComponent("oauth/token")
-        var request = URLRequest(url: tokenURL)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = formURLEncodedData([
-            "grant_type": "authorization_code",
-            "client_id": clientID,
-            "redirect_uri": redirectURI.absoluteString,
-            "code": code,
-            "code_verifier": verifier
-        ])
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw OAuthError.invalidTokenResponse
-        }
-        guard (200...299).contains(http.statusCode) else {
-            throw OAuthError.tokenExchangeFailed(http.statusCode)
-        }
-
-        return try JSONDecoder().decode(OAuthTokenResponse.self, from: data)
-    }
-
-    private func formURLEncodedData(_ values: [String: String]) -> Data {
-        values
-            .map { key, value in
-                "\(key.urlFormEncoded)=\(value.urlFormEncoded)"
-            }
-            .sorted()
-            .joined(separator: "&")
-            .data(using: .utf8) ?? Data()
-    }
 }
 
 private enum StorageKey {
@@ -233,38 +251,6 @@ extension AuthService {
     var baseURL: URL? { currentInstance?.baseURL }
 }
 
-private struct OAuthTokenResponse: Decodable {
-    let accessToken: String
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-    }
-}
-
-enum OAuthError: LocalizedError {
-    case authorizationCodeMissing
-    case callbackMissing
-    case invalidAuthorizationURL
-    case invalidRedirectURI
-    case invalidTokenResponse
-    case randomGenerationFailed(OSStatus)
-    case stateMismatch
-    case tokenExchangeFailed(Int)
-
-    var errorDescription: String? {
-        switch self {
-        case .authorizationCodeMissing: String(localized: "OAuth authorization code was missing.")
-        case .callbackMissing: String(localized: "OAuth callback was missing.")
-        case .invalidAuthorizationURL: String(localized: "OAuth authorization URL is invalid.")
-        case .invalidRedirectURI: String(localized: "OAuth redirect URI is invalid.")
-        case .invalidTokenResponse: String(localized: "OAuth token response is invalid.")
-        case .randomGenerationFailed(let status): String(localized: "PKCE random generation failed: \(status)")
-        case .stateMismatch: String(localized: "OAuth state mismatch.")
-        case .tokenExchangeFailed(let statusCode): String(localized: "OAuth token exchange failed: HTTP \(statusCode)")
-        }
-    }
-}
-
 enum AuthSessionError: LocalizedError {
     case missingStoredToken
 
@@ -273,20 +259,6 @@ enum AuthSessionError: LocalizedError {
         case .missingStoredToken: String(localized: "Stored token was missing.")
         }
     }
-}
-
-private extension String {
-    var urlFormEncoded: String {
-        addingPercentEncoding(withAllowedCharacters: .urlFormAllowed) ?? self
-    }
-}
-
-private extension CharacterSet {
-    static let urlFormAllowed: CharacterSet = {
-        var set = CharacterSet.urlQueryAllowed
-        set.remove(charactersIn: ":#[]@!$&'()*+,;=")
-        return set
-    }()
 }
 
 @MainActor

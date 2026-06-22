@@ -30,6 +30,21 @@ struct MainTabView: View {
         .onChange(of: localPollingService.intervalMinutes) {
             localPollingService.start(authService: authService)
         }
+        .sheet(isPresented: reauthenticationBinding) {
+            ReauthenticationSheet()
+                .environment(authService)
+        }
+    }
+
+    private var reauthenticationBinding: Binding<Bool> {
+        Binding(
+            get: { authService.needsReauthentication },
+            set: { isPresented in
+                if !isPresented {
+                    authService.clearNeedsReauthentication()
+                }
+            }
+        )
     }
 }
 
