@@ -149,7 +149,11 @@ private struct PipelineStageDisclosureRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button(action: toggle) {
+            Button(action: {
+                AppAnimation.withMotion(reduceMotion: reduceMotion) {
+                    toggle()
+                }
+            }) {
                 HStack(spacing: Spacing.md) {
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text(group.stage)
@@ -175,6 +179,7 @@ private struct PipelineStageDisclosureRow: View {
                         .font(AppFont.tertiary.weight(.semibold))
                         .foregroundStyle(TextColor.secondary)
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                        .animation(reduceMotion ? nil : AppAnimation.stageDisclosure, value: isExpanded)
                         .frame(width: 24, height: 24)
                 }
                 .contentShape(Rectangle())
@@ -203,7 +208,6 @@ private struct PipelineStageDisclosureRow: View {
                 .transition(AppAnimation.contentReveal(reduceMotion: reduceMotion))
             }
         }
-        .animation(reduceMotion ? nil : AppAnimation.stageDisclosure, value: isExpanded)
     }
 }
 
